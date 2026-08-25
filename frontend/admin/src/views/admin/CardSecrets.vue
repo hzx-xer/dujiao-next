@@ -300,6 +300,7 @@ const buildPlaceholderBatch = (batchID: number): AdminCardSecretBatch => ({
   available_count: 0,
   reserved_count: 0,
   used_count: 0,
+  is_loop: false,
   created_at: '',
 })
 

@@ -279,6 +279,35 @@ func (r *Store) DeleteByProduct(productID uint) error {
 		Updates(map[string]interface{}{"deleted_at": now, "updated_at": now}).Error
 }
 
+// HasLoopSecret 判断该商品+SKU 当前是否处于循环卡密模式（存在未软删除的循环卡密）
+func (r *Store) HasLoopSecret(productID, skuID uint) (bool, error) {
+	if productID == 0 {
+		return false, errors.New("invalid product id")
+	}
+	var count int64
+	err := r.db.Model(&cardsecretdomain.Secret{}).
+		Where("product_id = ? AND sku_id = ? AND is_loop = ? AND deleted_at IS NULL", productID, skuID, true).
+		Limit(1).
+		Count(&count).Error
+	return count > 0, err
+}
+
+// DisableAvailableNonLoop 软删除该商品+SKU 下所有可售的普通(非循环)卡密，
+// 用于切换到循环卡密模式时把普通库存立刻清空；已售出/已使用的历史记录不受影响。
+func (r *Store) DisableAvailableNonLoop(productID, skuID uint) (int64, error) {
+	if productID == 0 {
+		return 0, errors.New("invalid product id")
+	}
+	now := time.Now()
+	result := r.db.Model(&cardsecretdomain.Secret{}).
+		Where(
+			"product_id = ? AND sku_id = ? AND is_loop = ? AND status = ? AND deleted_at IS NULL",
+			productID, skuID, false, cardsecretdomain.StatusAvailable,
+		).
+		Updates(map[string]interface{}{"deleted_at": now, "updated_at": now})
+	return result.RowsAffected, result.Error
+}
+
 // CountByProduct 统计库存数量（总/可用/已用）
 func (r *Store) CountByProduct(productID, skuID uint) (int64, int64, int64, error) {
 	if productID == 0 {
@@ -441,5 +470,23 @@ func (r *Store) MarkUsed(ids []uint, orderID uint, usedAt time.Time) (int64, err
 			"reserved_at": nil,
 			"updated_at":  usedAt,
 		})
-	return result.RowsAffected, result.Error
+	if result.Error != nil {
+		return result.RowsAffected, result.Error
+	}
+	// 循环卡密：售出内容已经由调用方快照进 fulfillments.payload，这里立刻把
+	// 状态改回 available 并清空关联信息，不影响刚写入的历史订单记录，效果等同
+	// 无限库存——同一个函数覆盖自动发货和下单占用两条路径。
+	if err := r.db.Model(&cardsecretdomain.Secret{}).
+		Where("id IN ? AND is_loop = ?", ids, true).
+		Updates(map[string]interface{}{
+			"status":      cardsecretdomain.StatusAvailable,
+			"order_id":    nil,
+			"used_at":     nil,
+			"reserved_at": nil,
+			"updated_at":  usedAt,
+		}).Error; err != nil {
+		return result.RowsAffected, err
+	}
+	return result.RowsAffected, nil
 }
+

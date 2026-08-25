@@ -211,6 +211,7 @@ export interface AdminCardSecretBatch {
   available_count: number
   reserved_count: number
   used_count: number
+  is_loop: boolean
   created_at: string
 }
 
@@ -221,6 +222,7 @@ export interface AdminCardSecret {
   batch_id?: number
   secret: string
   status: string
+  is_loop: boolean
   order_id?: number
   reserved_at?: string
   used_at?: string

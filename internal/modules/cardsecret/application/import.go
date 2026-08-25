@@ -26,6 +26,7 @@ type CreateCardSecretBatchInput struct {
 	Source      string
 	AdminID     uint
 	Deduplicate *bool
+	IsLoop      bool
 }
 
 // CreateCardSecretBatch 批量录入卡密
@@ -47,6 +48,16 @@ func (s *Service) CreateCardSecretBatch(input CreateCardSecretBatchInput) (*card
 	sku, err := s.resolveCardSecretSKU(product.ID, input.SKUID)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// 循环卡密和普通卡密互斥：同一个商品+SKU 不能同时存在两种模式。是否处于
+	// 循环模式由"是否还有活着的循环卡密"判定，不额外持久化一个模式字段。
+	hasLoop, err := s.secretRepo.HasLoopSecret(product.ID, sku.ID)
+	if err != nil {
+		return nil, 0, ErrFetchFailed
+	}
+	if hasLoop && !input.IsLoop {
+		return nil, 0, ErrLoopModeConflict
 	}
 
 	normalized := normalizeSecrets(input.Secrets, shouldDeduplicateCardSecrets(input.Deduplicate))
@@ -74,6 +85,7 @@ func (s *Service) CreateCardSecretBatch(input CreateCardSecretBatchInput) (*card
 		Source:     source,
 		TotalCount: len(normalized),
 		Note:       strings.TrimSpace(input.Note),
+		IsLoop:     input.IsLoop,
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
@@ -85,6 +97,13 @@ func (s *Service) CreateCardSecretBatch(input CreateCardSecretBatchInput) (*card
 		return nil, 0, ErrBatchCreateFailed
 	}
 	err = s.transactions.Transaction(func(secretRepo cardsecretcontract.Repository, batchRepo cardsecretcontract.BatchRepository) error {
+		// 首次切换进循环模式：把该商品+SKU 下还能卖的普通卡密立刻清空，
+		// 跟新建这批循环卡密在同一个事务里提交，保证不会出现两种模式并存的中间状态。
+		if input.IsLoop && !hasLoop {
+			if _, err := secretRepo.DisableAvailableNonLoop(input.ProductID, sku.ID); err != nil {
+				return ErrBatchCreateFailed
+			}
+		}
 		if err := batchRepo.Create(batch); err != nil {
 			return ErrBatchCreateFailed
 		}
@@ -96,6 +115,7 @@ func (s *Service) CreateCardSecretBatch(input CreateCardSecretBatchInput) (*card
 				BatchID:   &batch.ID,
 				Secret:    secret,
 				Status:    cardsecretdomain.StatusAvailable,
+				IsLoop:    input.IsLoop,
 				CreatedAt: now,
 				UpdatedAt: now,
 			})
@@ -123,6 +143,7 @@ type ImportCardSecretCSVInput struct {
 	Note        string
 	AdminID     uint
 	Deduplicate *bool
+	IsLoop      bool
 }
 
 // ImportCardSecretCSV 从 CSV 导入卡密
@@ -150,6 +171,7 @@ func (s *Service) ImportCardSecretCSV(input ImportCardSecretCSVInput) (*cardsecr
 		Source:      constants.CardSecretSourceCSV,
 		AdminID:     input.AdminID,
 		Deduplicate: input.Deduplicate,
+		IsLoop:      input.IsLoop,
 	})
 }
 

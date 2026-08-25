@@ -12,6 +12,7 @@ type Batch struct {
 	BatchNo    string     `gorm:"uniqueIndex;not null" json:"batch_no"`                 // 批次号
 	Source     string     `gorm:"not null" json:"source"`                               // 来源（manual/csv）
 	TotalCount int        `gorm:"not null" json:"total_count"`                          // 总数量
+	IsLoop     bool       `gorm:"not null;default:false" json:"is_loop"`                // 循环卡密批次
 	Note       string     `gorm:"type:text" json:"note"`                                // 备注
 	CreatedBy  *uint      `gorm:"index" json:"created_by,omitempty"`                    // 创建管理员ID
 	CreatedAt  time.Time  `gorm:"index" json:"created_at"`                              // 创建时间

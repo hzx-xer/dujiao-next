@@ -18,4 +18,5 @@ var (
 	ErrProductNotFound    = errors.New("product not found")
 	ErrProductSKURequired = errors.New("product sku required")
 	ErrProductSKUInvalid  = errors.New("product sku invalid")
+	ErrLoopModeConflict   = errors.New("card secret loop mode conflict")
 )

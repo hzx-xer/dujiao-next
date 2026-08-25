@@ -32,6 +32,8 @@ type Repository interface {
 	ReleaseByOrder(orderID uint) (int64, error)
 	MarkUsed(ids []uint, orderID uint, usedAt time.Time) (int64, error)
 	DeleteByProduct(productID uint) error
+	HasLoopSecret(productID, skuID uint) (bool, error)
+	DisableAvailableNonLoop(productID, skuID uint) (int64, error)
 }
 
 // BatchRepository 持久化卡密导入批次。

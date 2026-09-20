@@ -514,7 +514,8 @@
         "order_refund": "订单退款",
         "gift_card_redeem": "礼品卡兑换",
         "admin_adjust": "管理员调账",
-        "admin_refund": "管理员退款"
+        "admin_refund": "管理员退款",
+        "order_underpaid_credit": "订单收款不足转入"
       },
       "errors": {
         "loadFailed": "钱包数据加载失败，请稍后重试",
@@ -1155,6 +1156,7 @@
     "errors": {
       "emptyCart": "购物车为空",
       "missingGuest": "请输入邮箱与订单密码",
+      "guestPasswordTooShort": "订单密码至少 6 位",
       "loginOrGuest": "请先登录或使用游客购买",
       "submitFailed": "提交失败，请稍后重试",
       "manualFormInvalid": "请完善交付信息后再提交",

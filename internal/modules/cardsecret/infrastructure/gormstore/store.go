@@ -489,4 +489,3 @@ func (r *Store) MarkUsed(ids []uint, orderID uint, usedAt time.Time) (int64, err
 	}
 	return result.RowsAffected, nil
 }
-

@@ -148,6 +148,13 @@ body.luna-tokens {
   background: var(--luna-backdrop);
 }
 
+/* 商品详情页窄屏底部固定购买条出现时，页脚留出它的高度，避免最后一行被盖住 */
+@media (max-width: 1023.98px) {
+  body.luna-mobilebar-open .luna-scope > footer {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* 回退到 classic 的页面用 .container 铺到断点宽度；在 luna 外壳里收窄到与顶栏、首页面板同宽 */
 .luna-scope main .container {
   max-width: 1100px;
@@ -170,6 +177,27 @@ body.luna-tokens {
     border-radius: 14px;
     box-shadow: var(--luna-shadow);
   }
+
+  /* 提交时必填区块没填完，轻轻左右抖一下引起注意（减少动效偏好下由文件末尾的规则关掉） */
+  .luna-shake {
+    animation: luna-shake 0.45s ease-in-out;
+  }
+
+  /* 横滑行（窄屏子分类）隐藏滚动条，仍可触摸 / 触控板滑动 */
+  .luna-no-scrollbar {
+    scrollbar-width: none;
+  }
+  .luna-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes luna-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

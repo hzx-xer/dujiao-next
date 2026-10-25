@@ -9,43 +9,69 @@
           <LayoutGrid class="h-5 w-5 flex-none text-primary" />
           {{ t('luna.chooseCategory') }}
         </h2>
-        <div class="mt-4 flex flex-wrap gap-2.5">
+        <!-- 窄屏三列网格，避免每个按钮独占半行；宽屏按内容宽度流式排列 -->
+        <div class="mt-4 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2.5">
           <button
             v-for="group in categoryGroups"
             :key="group.id"
             type="button"
-            class="inline-flex h-12 min-w-[108px] max-w-full items-center justify-center gap-2 rounded-[10px] px-5 text-sm transition"
+            class="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-[13px] transition sm:h-12 sm:min-w-[108px] sm:max-w-full sm:gap-2 sm:px-5 sm:text-sm"
             :class="activeGroup?.id === group.id ? 'luna-gradient font-semibold' : 'bg-secondary text-foreground hover:bg-primary/10 hover:text-primary'"
             :aria-pressed="activeGroup?.id === group.id"
             @click="selectCategory(group.id)"
           >
             <img v-if="group.icon" :src="getImageUrl(group.icon)" alt="" loading="lazy" class="h-5 w-5 flex-none rounded object-cover" />
             <span class="truncate">{{ catName(group) }}</span>
+            <!-- 有子分类的一级分类带个小箭头，提示点开还有下一级 -->
+            <ChevronDown v-if="group.children.length" class="h-3.5 w-3.5 flex-none opacity-70 transition-transform" :class="{ 'rotate-180': activeGroup?.id === group.id }" />
           </button>
         </div>
 
-        <!-- 子分类：点父分类看它和所有子分类的商品，点子分类只看该子分类 -->
-        <div v-if="activeGroup?.children.length" class="mt-3 flex flex-wrap gap-2">
-          <button
-            v-for="child in activeGroup.children"
-            :key="child.id"
-            type="button"
-            class="inline-flex h-8 max-w-full items-center rounded-full border px-3.5 text-[13px] transition-colors"
-            :class="selectedCategory === child.id ? 'border-primary bg-primary/10 font-semibold text-primary' : 'border-border text-muted-foreground hover:border-primary/50 hover:text-primary'"
-            :aria-pressed="selectedCategory === child.id"
-            @click="selectCategory(selectedCategory === child.id ? activeGroup.id : child.id)"
+        <!-- 子分类面板：「全部」看父分类及所有子分类的商品，点子分类只看该子分类 -->
+        <Transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="-translate-y-1 opacity-0"
+          leave-active-class="transition duration-100 ease-in"
+          leave-to-class="opacity-0"
+          mode="out-in"
+        >
+          <div
+            v-if="activeGroup?.children.length"
+            :key="activeGroup.id"
+            class="mt-3 flex items-center gap-2 rounded-[10px] border border-primary/15 bg-primary/5 p-1.5 sm:p-2"
           >
-            <span class="truncate">{{ catName(child) }}</span>
-          </button>
-        </div>
+            <span class="hidden flex-none items-center gap-1 pl-1.5 pr-1 text-[13px] font-semibold text-primary sm:inline-flex">
+              <CornerDownRight class="h-3.5 w-3.5" />
+              {{ catName(activeGroup) }}
+            </span>
+            <!-- 窄屏单行横滑，宽屏折行 -->
+            <div ref="subcategoryRow" class="luna-no-scrollbar -my-0.5 flex min-w-0 flex-1 gap-1.5 overflow-x-auto p-0.5 sm:flex-wrap sm:overflow-visible" role="group" :aria-label="t('luna.subcategories')">
+              <button
+                v-for="item in subcategoryItems"
+                :key="item.id"
+                type="button"
+                class="inline-flex h-8 max-w-[70vw] flex-none items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors sm:max-w-full"
+                :class="selectedCategory === item.id ? 'bg-card font-semibold text-primary shadow-[var(--luna-shadow-sm)] ring-1 ring-primary/40' : 'text-muted-foreground hover:bg-card/70 hover:text-primary'"
+                :aria-pressed="selectedCategory === item.id"
+                :data-active="selectedCategory === item.id || undefined"
+                @click="selectCategory(item.id)"
+              >
+                <img v-if="item.icon" :src="getImageUrl(item.icon)" alt="" loading="lazy" class="h-4 w-4 flex-none rounded object-cover" />
+                <span class="truncate">{{ item.label }}</span>
+              </button>
+            </div>
+          </div>
+        </Transition>
       </template>
 
       <!-- 选择商品 -->
       <div :class="{ 'mt-5 border-t pt-5': categoryGroups.length }">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <h2 class="flex min-w-0 items-center gap-2 text-lg font-semibold text-foreground">
             <ShoppingBag class="h-5 w-5 flex-none text-primary" />
             {{ t('luna.chooseProduct') }}
+            <!-- 当前浏览范围，例如「游戏充值 / Steam 钱包」 -->
+            <span v-if="selectedCategoryPath" class="truncate text-sm font-normal text-muted-foreground">· {{ selectedCategoryPath }}</span>
           </h2>
           <div class="relative w-full sm:w-64">
             <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -60,12 +86,12 @@
         </div>
 
         <!-- 骨架 -->
-        <div v-if="loading" class="mt-4 grid grid-cols-1 gap-3" :class="gridClass">
-          <div v-for="i in 6" :key="i" class="h-[100px] animate-pulse rounded-[10px] bg-secondary"></div>
+        <div v-if="loading" class="mt-4 grid" :class="gridClass">
+          <div v-for="i in 6" :key="i" class="animate-pulse rounded-[10px] bg-secondary" :class="productLayout === 'list' ? 'h-[72px]' : 'h-[150px] sm:h-[100px]'"></div>
         </div>
 
-        <div v-else-if="products.length" class="mt-4 grid grid-cols-1 gap-3" :class="gridClass">
-          <LunaProductCard v-for="product in products" :key="product.id" :product="product" @quick-buy="openQuickBuy" />
+        <div v-else-if="products.length" class="mt-4 grid" :class="gridClass">
+          <LunaProductCard v-for="product in products" :key="product.id" :product="product" :layout="productLayout" :category-label="productSubcategoryLabel(product)" />
         </div>
 
         <!-- 空态 -->
@@ -79,13 +105,6 @@
       </div>
     </section>
 
-    <ProductQuickBuy
-      v-if="quickBuyProduct"
-      :product="quickBuyProduct"
-      :visible="quickBuyVisible"
-      @update:visible="quickBuyVisible = $event"
-    />
-
     <AnnouncementModal
       v-if="activeAnnouncement"
       :announcement="activeAnnouncement"
@@ -96,12 +115,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LayoutGrid, PackageOpen, Search, SearchX, ShoppingBag, X } from 'lucide-vue-next'
+import { ChevronDown, CornerDownRight, LayoutGrid, PackageOpen, Search, SearchX, ShoppingBag, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { normalizeCategoryParentId, type PublicCategory } from '../../utils/category'
+import { buildCategoryPath, normalizeCategoryParentId, type PublicCategory } from '../../utils/category'
 import { getImageUrl } from '../../utils/image'
 import { useLocalized } from '../../composables/useProduct'
 import { useProductList } from '../../composables/useProductList'
@@ -110,7 +129,6 @@ import { useAnnouncement, type HomeAnnouncement } from '../../composables/useAnn
 import { useAppStore } from '../../stores/app'
 import LunaProductCard from './components/LunaProductCard.vue'
 import PaginationNav from '../../components/PaginationNav.vue'
-import ProductQuickBuy from '../../components/ProductQuickBuy.vue'
 import AnnouncementModal from '../../components/AnnouncementModal.vue'
 
 const route = useRoute()
@@ -145,16 +163,42 @@ const activeGroup = computed(() => {
   return categoryGroups.value.find((group) => group.id === (parentId > 0 ? parentId : selected.id))
 })
 
-// 后台「商品布局」：卡片模式多列，列表模式单列（模板里的 grid-cols-1 保证轨道是 minmax(0,1fr)，长商品名不会把列撑宽）
-const gridClass = computed(() => appStore.config?.template_mode === 'list' ? '' : 'sm:grid-cols-2 lg:grid-cols-3')
+/** 子分类面板的按钮：第一个「全部」就是父分类本身 */
+const subcategoryItems = computed(() => {
+  const group = activeGroup.value
+  if (!group?.children.length) return []
+  return [
+    { id: group.id, label: t('luna.subcategoryAll'), icon: '' },
+    ...group.children.map((child) => ({ id: child.id, label: catName(child), icon: child.icon || '' })),
+  ]
+})
 
-// ==================== 快速购买 ====================
-const quickBuyProduct = ref<any>(null)
-const quickBuyVisible = ref(false)
-const openQuickBuy = (product: any) => {
-  quickBuyProduct.value = product
-  quickBuyVisible.value = true
+/** 正在看父分类（全部）时，商品卡片标出各自所属的子分类 */
+const productSubcategoryLabel = (product: { category_id?: number }) => {
+  const group = activeGroup.value
+  if (!group?.children.length || selectedCategory.value !== group.id) return ''
+  const cat = product.category_id ? categoryMap.value.get(Number(product.category_id)) : undefined
+  return cat && cat.id !== group.id ? catName(cat) : ''
 }
+
+// 窄屏子分类是横滑的一行，选中项可能在屏幕外（如直接打开 /categories/xxx），滚到可见处
+const subcategoryRow = ref<HTMLElement | null>(null)
+watch([selectedCategory, () => subcategoryItems.value.length], async () => {
+  await nextTick()
+  const row = subcategoryRow.value
+  const active = row?.querySelector<HTMLElement>('[data-active]')
+  if (!row || !active || row.scrollWidth <= row.clientWidth) return
+  const offset = active.getBoundingClientRect().left - row.getBoundingClientRect().left
+  row.scrollTo({ left: row.scrollLeft + offset - (row.clientWidth - active.offsetWidth) / 2, behavior: 'smooth' })
+})
+
+// 后台「商品布局」（grid-cols-N 的轨道都是 minmax(0,1fr)，长商品名不会把列撑宽）
+const productLayout = computed<'card' | 'list'>(() => appStore.config?.template_mode === 'list' ? 'list' : 'card')
+// 卡片模式窄屏也两列（卡片自身在窄屏切成竖版）；列表模式各断点单列紧凑行
+// 窄屏不拉伸行高：有图卡和无图卡同排时，无图卡保持自身高度，空白留在卡片外而不是卡片中间
+const gridClass = computed(() => productLayout.value === 'list'
+  ? 'grid-cols-1 gap-2.5'
+  : 'grid-cols-2 items-start gap-2.5 sm:items-stretch sm:gap-3 lg:grid-cols-3')
 
 // ==================== 公告弹窗（版本化可关闭） ====================
 const { shouldShow } = useAnnouncement()
@@ -172,6 +216,11 @@ const showAnnouncementIfNeeded = () => {
 const selectedCategoryName = computed(() => {
   const cat = selectedCategory.value ? categoryMap.value.get(selectedCategory.value) : undefined
   return cat ? catName(cat) : ''
+})
+
+const selectedCategoryPath = computed(() => {
+  const cat = selectedCategory.value ? categoryMap.value.get(selectedCategory.value) : undefined
+  return buildCategoryPath(cat, categoryMap.value, (name) => getLocalizedText(name))
 })
 
 /** 一级标题：分类页用分类名，首页用站点名 */

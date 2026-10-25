@@ -17,7 +17,9 @@
         <Check v-if="stateOf(s.key) === 'done'" class="h-3.5 w-3.5" />
         <template v-else>{{ s.num }}</template>
       </span>
-      {{ s.label }}
+      <!-- 已完成的购物车步骤可点回去改数量 -->
+      <RouterLink v-if="s.key === 'cart' && stateOf(s.key) === 'done'" to="/cart" class="hover:underline">{{ s.label }}</RouterLink>
+      <template v-else>{{ s.label }}</template>
       <span v-if="i < steps.length - 1" class="ml-1 h-0.5 w-[22px] bg-border"></span>
     </li>
   </ol>

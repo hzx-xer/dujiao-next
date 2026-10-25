@@ -67,6 +67,8 @@ export function useCheckout() {
   const normalizedCouponCode = computed(() => couponCode.value.trim())
   const submitting = ref(false)
   const error = ref('')
+  /** 最近一次因前端校验拦截提交时写入 error 的文案，用来区分「过时的拦截提示」与服务端错误 */
+  const blockedErrorMessage = ref('')
   const preview = ref<any>(null)
   const previewLoading = ref(false)
   const previewError = ref('')
@@ -804,6 +806,7 @@ export function useCheckout() {
     previewError.value = ''
     if (!canSubmit.value) {
       error.value = submitBlockedReason.value || t('checkout.errors.submitFailed')
+      blockedErrorMessage.value = error.value
       return
     }
 
@@ -847,9 +850,14 @@ export function useCheckout() {
       clearSourceStore()
 
       // Redirect to the existing Payment page which handles all payment display
-      const query = userAuthStore.isAuthenticated
+      let query = userAuthStore.isAuthenticated
         ? `order_no=${encodeURIComponent(responseData.order_no)}`
         : `guest=1&order_no=${encodeURIComponent(responseData.order_no)}`
+      // 订单已建好但所选渠道发起支付失败（create-and-pay 返回 payment_error）：告诉支付页是哪个渠道失败了，
+      // 支付页可据此提示用户换一种支付方式
+      if (responseData.payment_error && payload.channel_id) {
+        query += `&pay_failed=${encodeURIComponent(String(payload.channel_id))}`
+      }
       router.push(`/pay?${query}`)
     } catch (err: any) {
       error.value = err.message || t('checkout.errors.submitFailed')
@@ -1101,6 +1109,15 @@ export function useCheckout() {
     if (available <= 0) return t('cart.stockOut')
     return t('cart.stockRemaining', { count: available })
   }
+
+  // 提交被拦截时 error 记下的是当时的拦截原因；用户补齐信息后原因变了（或已能提交），清掉这条过时提示，
+  // checkoutAlert 会回退显示新的拦截原因或不再提示。
+  // 放在末尾：watch 会立即求值 submitBlockedReason，它依赖上面才定义的 itemStockExceeded 等函数。
+  watch(submitBlockedReason, (reason) => {
+    if (error.value && error.value !== reason && error.value === blockedErrorMessage.value) {
+      error.value = ''
+    }
+  })
 
   return {
     // stores / helpers

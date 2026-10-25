@@ -1,9 +1,9 @@
 <template>
-  <div class="mx-auto w-full max-w-[1100px] px-6 pb-8">
-    <div class="my-5 flex items-start justify-between gap-4">
+  <div class="mx-auto w-full max-w-[1100px] px-3 pb-8 sm:px-6">
+    <div class="mb-4 mt-5 flex items-start justify-between gap-4 sm:mb-5 sm:mt-7">
       <div>
-        <h1 class="mb-1.5 text-[32px] font-extrabold">{{ t('payment.title') }}</h1>
-        <p class="text-muted-foreground">{{ t('payment.subtitle') }}</p>
+        <h1 class="text-2xl font-extrabold sm:text-[30px]">{{ t('payment.title') }}</h1>
+        <p class="mt-1 text-sm text-muted-foreground">{{ t('payment.subtitle') }}</p>
       </div>
       <RouterLink :to="backLink" class="text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary">{{ t('payment.backToOrders') }}</RouterLink>
     </div>
@@ -11,13 +11,13 @@
     <LunaCheckoutSteps current="payment" />
 
     <!-- Loading -->
-    <div v-if="loading" class="mb-[18px] luna-panel p-[22px]">
+    <div v-if="loading" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
       <div class="mb-4 h-5 w-[40%] rounded bg-secondary"></div>
       <div class="h-[180px] rounded-md bg-secondary"></div>
     </div>
 
     <!-- 游客验证 -->
-    <div v-else-if="showGuestAuthForm" class="mb-[18px] luna-panel p-[22px]">
+    <div v-else-if="showGuestAuthForm" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
       <h2 class="mb-1.5 text-lg font-bold">{{ t('payment.guestAuthTitle') }}</h2>
       <p class="mb-3.5 text-[13px] text-muted-foreground">{{ t('payment.guestAuthHint') }}</p>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -36,7 +36,7 @@
     </div>
 
     <!-- 结果视图 -->
-    <div v-else-if="showResultView" class="mb-[18px] luna-panel p-[22px]">
+    <div v-else-if="showResultView" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold">{{ paymentResultTitle }}</h2>
@@ -111,7 +111,7 @@
     </div>
 
     <!-- 过期 / 取消 -->
-    <div v-else-if="orderExpired || orderCanceled" class="mb-[18px] luna-panel p-[22px]">
+    <div v-else-if="orderExpired || orderCanceled" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold">{{ orderCanceled ? t('payment.orderCanceled') : t('payment.orderExpired') }}</h2>
@@ -127,18 +127,18 @@
     </div>
 
     <!-- 默认：订单 + 渠道 + 操作 -->
-    <div v-else class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_340px]">
-      <div class="grid grid-cols-1 gap-[18px]">
+    <div v-else class="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div class="grid min-w-0 grid-cols-1 gap-4">
         <!-- 订单信息 -->
-        <section class="luna-panel p-[22px]">
-          <h2 class="mb-3.5 text-lg font-bold">{{ t('payment.orderInfo') }}</h2>
+        <section class="luna-panel p-4 sm:p-[22px]">
+          <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.orderInfo') }}</h2>
           <div class="flex flex-wrap items-start justify-between gap-[18px]">
             <div>
               <div class="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">{{ t('payment.orderNo') }}</div>
               <div class="mt-1 font-bold text-foreground">{{ order.order_no }}</div>
               <div class="mt-2 text-xs text-muted-foreground">{{ t('orderDetail.createdAtLabel') }}：{{ formatDate(order.created_at) }}</div>
             </div>
-            <div class="min-w-[280px] flex-1 rounded-md border bg-secondary p-4">
+            <div class="w-full flex-1 rounded-md border bg-secondary p-4 sm:min-w-[280px] sm:w-auto">
               <div class="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">{{ t('payment.payableAmountLabel') }}</div>
               <div class="my-1 mb-3 text-[26px] font-extrabold text-foreground tabular-nums">{{ payableAmountDisplay }}</div>
               <div class="grid grid-cols-1 gap-[7px] text-[12.5px]">
@@ -149,10 +149,10 @@
               </div>
             </div>
           </div>
-          <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div class="rounded-md border bg-secondary p-3.5"><div class="text-xs text-muted-foreground">{{ t('orderDetail.amountOriginal') }}</div><div class="mt-1 font-semibold text-foreground tabular-nums">{{ formatMoney(order.original_amount, order.currency) }}</div></div>
-            <div class="rounded-md border bg-secondary p-3.5"><div class="text-xs text-muted-foreground">{{ t('orderDetail.amountDiscount') }}</div><div class="mt-1 font-semibold tabular-nums" :class="hasDiscountAmount(order.discount_amount) ? 'text-destructive' : 'text-foreground'">{{ formatDiscountMoney(order.discount_amount, order.currency) }}</div></div>
-            <div class="rounded-md border bg-secondary p-3.5"><div class="text-xs text-muted-foreground">{{ t('orderDetail.promotionDiscountLabel') }}</div><div class="mt-1 font-semibold tabular-nums" :class="hasDiscountAmount(order.promotion_discount_amount) ? 'text-destructive' : 'text-foreground'">{{ formatDiscountMoney(order.promotion_discount_amount, order.currency) }}</div></div>
+          <div class="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+            <div class="rounded-md border bg-secondary p-2.5 sm:p-3.5"><div class="text-xs text-muted-foreground">{{ t('orderDetail.amountOriginal') }}</div><div class="mt-1 font-semibold text-foreground tabular-nums">{{ formatMoney(order.original_amount, order.currency) }}</div></div>
+            <div class="rounded-md border bg-secondary p-2.5 sm:p-3.5"><div class="text-xs text-muted-foreground">{{ t('orderDetail.amountDiscount') }}</div><div class="mt-1 font-semibold tabular-nums" :class="hasDiscountAmount(order.discount_amount) ? 'text-destructive' : 'text-foreground'">{{ formatDiscountMoney(order.discount_amount, order.currency) }}</div></div>
+            <div class="rounded-md border bg-secondary p-2.5 sm:p-3.5"><div class="text-xs text-muted-foreground">{{ t('orderDetail.promotionDiscountLabel') }}</div><div class="mt-1 font-semibold tabular-nums" :class="hasDiscountAmount(order.promotion_discount_amount) ? 'text-destructive' : 'text-foreground'">{{ formatDiscountMoney(order.promotion_discount_amount, order.currency) }}</div></div>
             <div v-if="hasDiscountAmount(order.wholesale_discount_amount)" class="rounded-md border border-success bg-secondary p-3.5 text-success"><div class="text-xs">{{ t('orderDetail.amountWholesaleDiscount') }}</div><div class="mt-1 font-semibold tabular-nums">{{ formatDiscountMoney(order.wholesale_discount_amount, order.currency) }}</div></div>
           </div>
           <div v-if="order.expires_at" class="mt-3 text-[13px] text-muted-foreground">{{ t('payment.expiresAt') }}：{{ formatDate(order.expires_at) }}</div>
@@ -163,8 +163,8 @@
         </section>
 
         <!-- 商品 -->
-        <section v-if="orderItems.length" class="luna-panel p-[22px]">
-          <h2 class="mb-3.5 text-lg font-bold">{{ t('payment.itemsTitle') }}</h2>
+        <section v-if="orderItems.length" class="luna-panel p-4 sm:p-[22px]">
+          <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.itemsTitle') }}</h2>
           <div class="grid grid-cols-1 gap-3">
             <div v-for="(item, idx) in orderItems" :key="idx" class="flex flex-wrap justify-between gap-3 border-b pb-3 last:border-b-0 last:pb-0">
               <div>
@@ -178,8 +178,8 @@
         </section>
 
         <!-- 渠道选择 -->
-        <section class="luna-panel p-[22px]">
-          <h2 class="mb-3.5 text-lg font-bold">{{ t('payment.channelTitle') }}</h2>
+        <section class="luna-panel p-4 sm:p-[22px]">
+          <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.channelTitle') }}</h2>
           <div v-if="!configReady" class="text-[13px] text-muted-foreground">{{ t('common.loading') }}</div>
           <template v-else>
             <div v-if="showBalanceOption" class="mb-3 rounded-sm border bg-secondary p-3.5">
@@ -202,21 +202,30 @@
               <div>{{ t('payment.cachedHint', { channel: cachedChannelName }) }}</div>
               <div class="mt-1.5"><Button variant="outline" size="sm" class="rounded-full" @click="restoreCachedPayment">{{ t('payment.useCached') }}</Button></div>
             </div>
-            <PaymentChannelSelector
-              v-if="!walletOnlyPayment"
-              :channels="channels"
-              :model-value="selectedChannelId"
-              :show-balance-option="showBalanceOption"
-              :is-channel-disabled-for-amount="isChannelDisabledForAmount"
-              :channel-amount-limit-hint="channelAmountLimitHint"
-              @update:model-value="selectedChannelId = $event"
-            />
+            <!-- 结算时所选渠道发起失败（如未配好的渠道）：说明原因，引导换一种 -->
+            <div v-if="failedChannelName" class="mb-3 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-[13px] font-semibold text-destructive" role="alert">
+              <AlertCircle class="mt-px h-4 w-4 flex-none" />
+              <span>{{ t('luna.paymentChannelFailed', { channel: failedChannelName }) }}</span>
+            </div>
+            <!-- 与结算页同一套渠道列表（紧凑行 + 类型徽标 + 渠道多时折叠） -->
+            <template v-if="!walletOnlyPayment">
+              <LunaPaymentChannels
+                v-if="channels.length > 0"
+                :channels="channels"
+                :model-value="selectedChannelId"
+                :aria-label="t('payment.channelTitle')"
+                :is-channel-disabled-for-amount="isChannelDisabledForAmount"
+                :channel-amount-limit-hint="channelAmountLimitHint"
+                @update:model-value="selectedChannelId = $event"
+              />
+              <div v-else class="text-[13px] text-muted-foreground">{{ showBalanceOption ? t('payment.channelEmptyUseBalance') : t('payment.channelEmpty') }}</div>
+            </template>
           </template>
         </section>
 
         <!-- 支付信息 -->
-        <section v-if="paymentResult" class="luna-panel p-[22px]">
-          <h2 class="mb-3.5 text-lg font-bold">{{ t('payment.infoTitle') }}</h2>
+        <section v-if="paymentResult" class="luna-panel p-4 sm:p-[22px]">
+          <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.infoTitle') }}</h2>
           <div class="grid grid-cols-1 gap-1.5 text-[13px] text-muted-foreground">
             <div>{{ t('payment.methodLabel') }}：{{ resultChannelName }}</div>
             <div>{{ t('payment.interactionLabel') }}：{{ interactionLabel }}</div>
@@ -230,8 +239,8 @@
       </div>
 
       <!-- 右栏：操作 -->
-      <aside class="sticky top-[90px] luna-panel p-[22px]">
-        <h2 class="mb-3.5 text-lg font-bold">{{ t('payment.actionTitle') }}</h2>
+      <aside class="luna-panel p-4 sm:p-[22px] lg:sticky lg:top-[90px]">
+        <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.actionTitle') }}</h2>
         <div v-if="showCountdown" class="mb-3 text-xs text-muted-foreground">{{ t('payment.countdownLabel') }}：<span class="tabular-nums">{{ countdownText }}</span></div>
         <div v-if="paymentAlert" class="mb-3 rounded-sm px-3 py-2.5 text-[13px] font-semibold" :class="paymentAlert.level === 'error' ? 'bg-destructive/10 text-destructive' : (paymentAlert.level === 'success' ? 'bg-success/15 text-success' : 'bg-warning/10 text-warning')">{{ paymentAlert.message }}</div>
 
@@ -250,13 +259,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PaymentAmountBreakdown from '../../components/payment/PaymentAmountBreakdown.vue'
-import PaymentChannelSelector from '../../components/payment/PaymentChannelSelector.vue'
 import LunaCheckoutSteps from './components/LunaCheckoutSteps.vue'
+import LunaPaymentChannels from './components/LunaPaymentChannels.vue'
 import { usePayment } from '../../composables/usePayment'
 
 const { t } = useI18n()
@@ -276,4 +287,25 @@ const {
   handleCopyPayLink, handleCopyWalletAddress, handleOpenPayLink, restoreCachedPayment, handleChangePaymentMethod,
   handlePayment, handleGuestAuthSubmit, handleRefresh,
 } = usePayment()
+
+const route = useRoute()
+
+/** 结算页带过来的「发起失败的渠道」id（见 useCheckout 的 pay_failed） */
+const failedChannelId = computed(() => Number(route.query.pay_failed) || 0)
+const failedChannelName = computed(() => {
+  if (!failedChannelId.value) return ''
+  const channel = (channels.value as any[]).find((c) => Number(c.id) === failedChannelId.value)
+  return channel ? String(channel.name || '') : ''
+})
+
+// 与结算页一致：还没选渠道时默认选中第一个可用的（跳过刚发起失败的那个），少点一下
+watch(
+  () => [channels.value, selectedChannelId.value, requiresOnlineChannel.value, walletOnlyPayment.value, cachedPayment.value] as const,
+  () => {
+    if (selectedChannelId.value || !requiresOnlineChannel.value || walletOnlyPayment.value || cachedPayment.value) return
+    const first = (channels.value as any[]).find((c) => !isChannelDisabledForAmount(c) && Number(c.id) !== failedChannelId.value)
+    if (first) selectedChannelId.value = Number(first.id)
+  },
+  { immediate: true, deep: true },
+)
 </script>

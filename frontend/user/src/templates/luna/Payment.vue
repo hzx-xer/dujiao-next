@@ -127,7 +127,7 @@
     </div>
 
     <!-- 默认：订单 + 渠道 + 操作 -->
-    <div v-else class="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div v-else class="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div class="grid min-w-0 grid-cols-1 gap-4">
         <!-- 订单信息 -->
         <section class="luna-panel p-4 sm:p-[22px]">
@@ -177,52 +177,6 @@
           </div>
         </section>
 
-        <!-- 渠道选择 -->
-        <section class="luna-panel p-4 sm:p-[22px]">
-          <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.channelTitle') }}</h2>
-          <div v-if="!configReady" class="text-[13px] text-muted-foreground">{{ t('common.loading') }}</div>
-          <template v-else>
-            <div v-if="showBalanceOption" class="mb-3 rounded-sm border bg-secondary p-3.5">
-              <div class="flex items-start justify-between gap-2.5">
-                <div>
-                  <div class="text-xs text-muted-foreground">{{ t('payment.walletBalanceLabel') }}</div>
-                  <div class="mt-0.5 font-bold text-foreground">{{ walletLoading ? t('common.loading') : walletBalanceDisplay }}</div>
-                </div>
-                <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><input v-model="useBalance" type="checkbox" class="h-4 w-4 accent-[var(--ui-accent)]" :disabled="walletOnlyPayment" /><span>{{ t('payment.useBalance') }}</span></label>
-              </div>
-              <div v-if="walletOnlyPayment" class="mt-2 text-xs text-warning">{{ t('payment.walletOnlyHint') }}</div>
-              <div v-if="useBalance" class="mt-2.5 grid grid-cols-1 gap-0.5 text-xs text-muted-foreground">
-                <div>{{ t('payment.walletDeductLabel') }}：{{ expectedWalletPaidDisplay }}</div>
-                <div v-if="!walletOnlyPayment">{{ t('payment.onlinePayLabel') }}：{{ expectedOnlinePayDisplay }}</div>
-                <div v-if="walletOnlyPayment && expectedOnlinePayCents > 0" class="text-warning">{{ t('payment.walletInsufficientHint') }}</div>
-              </div>
-            </div>
-            <div v-if="cachedPayment" class="mb-3 grid grid-cols-1 gap-1.5 rounded-sm border border-warning bg-warning/15 p-3 text-[13px] text-warning">
-              <div class="font-bold">{{ t('payment.cachedTitle') }}</div>
-              <div>{{ t('payment.cachedHint', { channel: cachedChannelName }) }}</div>
-              <div class="mt-1.5"><Button variant="outline" size="sm" class="rounded-full" @click="restoreCachedPayment">{{ t('payment.useCached') }}</Button></div>
-            </div>
-            <!-- 结算时所选渠道发起失败（如未配好的渠道）：说明原因，引导换一种 -->
-            <div v-if="failedChannelName" class="mb-3 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-[13px] font-semibold text-destructive" role="alert">
-              <AlertCircle class="mt-px h-4 w-4 flex-none" />
-              <span>{{ t('luna.paymentChannelFailed', { channel: failedChannelName }) }}</span>
-            </div>
-            <!-- 与结算页同一套渠道列表（紧凑行 + 类型徽标 + 渠道多时折叠） -->
-            <template v-if="!walletOnlyPayment">
-              <LunaPaymentChannels
-                v-if="channels.length > 0"
-                :channels="channels"
-                :model-value="selectedChannelId"
-                :aria-label="t('payment.channelTitle')"
-                :is-channel-disabled-for-amount="isChannelDisabledForAmount"
-                :channel-amount-limit-hint="channelAmountLimitHint"
-                @update:model-value="selectedChannelId = $event"
-              />
-              <div v-else class="text-[13px] text-muted-foreground">{{ showBalanceOption ? t('payment.channelEmptyUseBalance') : t('payment.channelEmpty') }}</div>
-            </template>
-          </template>
-        </section>
-
         <!-- 支付信息 -->
         <section v-if="paymentResult" class="luna-panel p-4 sm:p-[22px]">
           <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.infoTitle') }}</h2>
@@ -238,21 +192,65 @@
         </section>
       </div>
 
-      <!-- 右栏：操作 -->
-      <aside class="luna-panel p-4 sm:p-[22px] lg:sticky lg:top-[90px]">
-        <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.actionTitle') }}</h2>
-        <div v-if="showCountdown" class="mb-3 text-xs text-muted-foreground">{{ t('payment.countdownLabel') }}：<span class="tabular-nums">{{ countdownText }}</span></div>
-        <div v-if="paymentAlert" class="mb-3 rounded-sm px-3 py-2.5 text-[13px] font-semibold" :class="paymentAlert.level === 'error' ? 'bg-destructive/10 text-destructive' : (paymentAlert.level === 'success' ? 'bg-success/15 text-success' : 'bg-warning/10 text-warning')">{{ paymentAlert.message }}</div>
+      <!-- 右栏：渠道选择 + 操作（与结算页一致，支付方式统一在右栏） -->
+      <aside class="luna-panel min-w-0 p-4 sm:p-[22px] lg:sticky lg:top-[90px]">
+        <!-- 渠道选择 -->
+        <h2 class="mb-3 text-base font-bold sm:mb-3.5 sm:text-lg">{{ t('payment.channelTitle') }}</h2>
+        <div v-if="!configReady" class="text-[13px] text-muted-foreground">{{ t('common.loading') }}</div>
+        <template v-else>
+          <div v-if="showBalanceOption" class="mb-3 rounded-sm border bg-secondary p-3.5">
+            <div class="flex items-start justify-between gap-2.5">
+              <div>
+                <div class="text-xs text-muted-foreground">{{ t('payment.walletBalanceLabel') }}</div>
+                <div class="mt-0.5 font-bold text-foreground">{{ walletLoading ? t('common.loading') : walletBalanceDisplay }}</div>
+              </div>
+              <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><input v-model="useBalance" type="checkbox" class="h-4 w-4 accent-[var(--ui-accent)]" :disabled="walletOnlyPayment" /><span>{{ t('payment.useBalance') }}</span></label>
+            </div>
+            <div v-if="walletOnlyPayment" class="mt-2 text-xs text-warning">{{ t('payment.walletOnlyHint') }}</div>
+            <div v-if="useBalance" class="mt-2.5 grid grid-cols-1 gap-0.5 text-xs text-muted-foreground">
+              <div>{{ t('payment.walletDeductLabel') }}：{{ expectedWalletPaidDisplay }}</div>
+              <div v-if="!walletOnlyPayment">{{ t('payment.onlinePayLabel') }}：{{ expectedOnlinePayDisplay }}</div>
+              <div v-if="walletOnlyPayment && expectedOnlinePayCents > 0" class="text-warning">{{ t('payment.walletInsufficientHint') }}</div>
+            </div>
+          </div>
+          <div v-if="cachedPayment" class="mb-3 grid grid-cols-1 gap-1.5 rounded-sm border border-warning bg-warning/15 p-3 text-[13px] text-warning">
+            <div class="font-bold">{{ t('payment.cachedTitle') }}</div>
+            <div>{{ t('payment.cachedHint', { channel: cachedChannelName }) }}</div>
+            <div class="mt-1.5"><Button variant="outline" size="sm" class="rounded-full" @click="restoreCachedPayment">{{ t('payment.useCached') }}</Button></div>
+          </div>
+          <!-- 结算时所选渠道发起失败（如未配好的渠道）：说明原因，引导换一种 -->
+          <div v-if="failedChannelName" class="mb-3 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2.5 text-[13px] font-semibold text-destructive" role="alert">
+            <AlertCircle class="mt-px h-4 w-4 flex-none" />
+            <span>{{ t('luna.paymentChannelFailed', { channel: failedChannelName }) }}</span>
+          </div>
+          <!-- 与结算页同一套渠道列表（紧凑行 + 类型徽标 + 渠道多时折叠） -->
+          <template v-if="!walletOnlyPayment">
+            <LunaPaymentChannels
+              v-if="channels.length > 0"
+              :channels="channels"
+              :model-value="selectedChannelId"
+              :aria-label="t('payment.channelTitle')"
+              :is-channel-disabled-for-amount="isChannelDisabledForAmount"
+              :channel-amount-limit-hint="channelAmountLimitHint"
+              @update:model-value="selectedChannelId = $event"
+            />
+            <div v-else class="text-[13px] text-muted-foreground">{{ showBalanceOption ? t('payment.channelEmptyUseBalance') : t('payment.channelEmpty') }}</div>
+          </template>
+        </template>
+        <div class="mt-4 border-t pt-3.5">
+          <div v-if="showCountdown" class="mb-3 text-xs text-muted-foreground">{{ t('payment.countdownLabel') }}：<span class="tabular-nums">{{ countdownText }}</span></div>
+          <div v-if="paymentAlert" class="mb-3 rounded-sm px-3 py-2.5 text-[13px] font-semibold" :class="paymentAlert.level === 'error' ? 'bg-destructive/10 text-destructive' : (paymentAlert.level === 'success' ? 'bg-success/15 text-success' : 'bg-warning/10 text-warning')">{{ paymentAlert.message }}</div>
 
-        <div v-if="selectedChannel" class="mb-3 rounded-sm bg-success/15 px-3 py-2.5 text-xs font-semibold text-success">{{ t('payment.methodLabel') }}：{{ selectedChannelName }}</div>
-        <div v-else-if="!requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3 rounded-sm bg-success/15 px-3 py-2.5 text-xs font-semibold text-success">{{ t('payment.walletPayOnly') }}</div>
-        <div v-else-if="walletOnlyPayment && expectedOnlinePayCents > 0 && !orderExpired && !orderCanceled" class="mb-3 rounded-sm bg-warning/10 px-3 py-2.5 text-xs font-semibold text-warning">{{ t('payment.walletInsufficientHint') }}</div>
-        <div v-else-if="!walletOnlyPayment && requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3 rounded-sm bg-warning/10 px-3 py-2.5 text-xs font-semibold text-warning">{{ t('payment.selectChannelError') }}</div>
+          <div v-if="selectedChannel" class="mb-3 rounded-sm bg-success/15 px-3 py-2.5 text-xs font-semibold text-success">{{ t('payment.methodLabel') }}：{{ selectedChannelName }}</div>
+          <div v-else-if="!requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3 rounded-sm bg-success/15 px-3 py-2.5 text-xs font-semibold text-success">{{ t('payment.walletPayOnly') }}</div>
+          <div v-else-if="walletOnlyPayment && expectedOnlinePayCents > 0 && !orderExpired && !orderCanceled" class="mb-3 rounded-sm bg-warning/10 px-3 py-2.5 text-xs font-semibold text-warning">{{ t('payment.walletInsufficientHint') }}</div>
+          <div v-else-if="!walletOnlyPayment && requiresOnlineChannel && !orderExpired && !orderCanceled" class="mb-3 rounded-sm bg-warning/10 px-3 py-2.5 text-xs font-semibold text-warning">{{ t('payment.selectChannelError') }}</div>
 
-        <Button class="luna-gradient h-11 w-full rounded-full font-bold" :disabled="!canSubmitPayment" @click="handlePayment">
-          {{ submitting ? t('payment.submitting') : t('payment.submitButton') }}
-        </Button>
-        <Button variant="outline" class="mt-2.5 h-11 w-full rounded-full font-bold" :disabled="loading" @click="handleRefresh">{{ t('payment.refreshStatus') }}</Button>
+          <Button class="luna-gradient h-11 w-full rounded-full font-bold" :disabled="!canSubmitPayment" @click="handlePayment">
+            {{ submitting ? t('payment.submitting') : t('payment.submitButton') }}
+          </Button>
+          <Button variant="outline" class="mt-2.5 h-11 w-full rounded-full font-bold" :disabled="loading" @click="handleRefresh">{{ t('payment.refreshStatus') }}</Button>
+        </div>
       </aside>
     </div>
   </div>

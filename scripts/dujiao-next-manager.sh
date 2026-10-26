@@ -4,7 +4,7 @@ set -Eeuo pipefail
 umask 077
 
 readonly MANAGER_VERSION="1.0.0"
-readonly GITHUB_REPOSITORY="dujiao-next/dujiao-next"
+readonly GITHUB_REPOSITORY="hzx-xer/dujiao-next"
 readonly GITHUB_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
 readonly MANAGER_SOURCE_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/scripts/dujiao-next-manager.sh"
 readonly SERVICE_USER="dujiao"
@@ -323,7 +323,7 @@ archive_name_for() {
 
 validate_download_url() {
   local url=$1
-  [[ "$url" =~ ^https://github\.com/dujiao-next/dujiao-next/releases/download/[^/]+/[^/?#]+$ ]]
+  [[ "$url" =~ ^https://github\.com/hzx-xer/dujiao-next/releases/download/[^/]+/[^/?#]+$ ]]
 }
 
 validate_effective_download_url() {

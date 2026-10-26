@@ -221,12 +221,6 @@ cp config.yml.example config.yml
 
 Full instructions: https://dujiao-next.com/deploy/
 
-Or with Docker:
-
-```bash
-docker run -d -p 8080:8080 -v $PWD/config.yml:/app/config.yml:ro dujiaonext/dujiao-next:latest
-```
-
 ## Quick Start (Develop)
 
 Run the backend and the two frontends separately for hot reload:

@@ -105,10 +105,6 @@
         </div>
         <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
           <span>© {{ year }} {{ brandName }}</span>
-          <a href="https://github.com/dujiao-next" target="_blank" rel="noopener noreferrer" aria-label="Dujiao-Next on GitHub" class="inline-flex items-center gap-1 transition-colors hover:text-primary">
-            <Github class="h-3.5 w-3.5" />
-            <span>Dujiao-Next</span>
-          </a>
         </div>
       </div>
     </footer>
@@ -119,7 +115,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  Check, ClipboardList, Github, Headphones, Languages, LogOut, Mail, Menu, MessageCircle, Moon,
+  Check, ClipboardList, Headphones, Languages, LogOut, Mail, Menu, MessageCircle, Moon,
   Send, ShoppingCart, Sun, User, X,
 } from 'lucide-vue-next'
 import { useAppStore } from '../../../stores/app'

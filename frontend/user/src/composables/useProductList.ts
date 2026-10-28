@@ -228,7 +228,8 @@ export function useProductList(options: UseProductListOptions = {}) {
       if (!fallback) return false
       selectedCategory.value = fallback.id
       if (fallback.slug) {
-        router.replace({ name: categoryRouteName, params: { slug: fallback.slug } })
+        // 保留 q / page，与随后从 URL 恢复的关键词、页码保持一致
+        router.replace({ name: categoryRouteName, params: { slug: fallback.slug }, query: route.query })
       }
       return true
     }

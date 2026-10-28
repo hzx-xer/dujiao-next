@@ -39,3 +39,17 @@ test('resolveListScrollSignal after reset does not affect next reset', async () 
   // 核心是确保不抛错、逻辑独立
   assert.equal(typeof resolved, 'boolean')
 })
+
+test('resetListScrollSignal keeps an already pending signal for earlier waiters', async () => {
+  resolveListScrollSignal()
+  // scrollBehavior 先重置并开始等待，随后列表 loadProducts 再次重置
+  resetListScrollSignal()
+  let resolved = false
+  const p = waitForListScrollSignal(500).then(() => { resolved = true })
+  resetListScrollSignal()
+  resolveListScrollSignal()
+  const start = Date.now()
+  await p
+  assert.equal(resolved, true)
+  assert.ok(Date.now() - start < 400, 'should resolve via signal, not the timeout')
+})

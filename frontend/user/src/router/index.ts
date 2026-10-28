@@ -5,7 +5,7 @@ import { useTelegramMiniAppStore } from '../stores/telegramMiniApp'
 import { captureAffiliateFromRoute } from '../utils/affiliate'
 import { templateView } from '../templates/registry'
 import { GOOGLE_REDIRECT_FRONTEND_CALLBACK_PATH } from '../utils/googleRedirect'
-import { waitForListScrollSignal } from '../utils/listScrollSignal'
+import { resetListScrollSignal, waitForListScrollSignal } from '../utils/listScrollSignal'
 
 type RouteComponentLoader = () => Promise<unknown>
 
@@ -108,6 +108,7 @@ const router = createRouter({
             // 后退/前进到列表页时，等数据加载完再恢复位置，避免页面未撑开就截断
             const listRoutes = new Set(['home', 'products', 'category-products'])
             if (listRoutes.has(String(to.name))) {
+                resetListScrollSignal()
                 await waitForListScrollSignal()
             }
             return savedPosition

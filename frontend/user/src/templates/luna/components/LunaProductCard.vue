@@ -12,6 +12,12 @@
     </span>
 
     <div class="min-w-0 flex-1">
+      <!-- 搜索结果来自全部分类：醒目标出所属分类 -->
+      <span v-if="sourcePath" class="mb-1 inline-flex max-w-full items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary" :title="sourcePath">
+        <FolderOpen class="h-3 w-3 flex-none" aria-hidden="true" />
+        <span class="sr-only">{{ t('luna.sourceLabel') }}</span>
+        <span class="truncate">{{ sourcePath }}</span>
+      </span>
       <h3 class="line-clamp-2 break-words text-sm font-medium leading-snug text-foreground">{{ title }}</h3>
       <!-- 窄屏价格放到标题下方，右侧只留购买按钮，给标题腾出宽度 -->
       <div class="mt-1 flex flex-wrap items-baseline gap-x-1.5 sm:hidden">
@@ -66,6 +72,12 @@
     </span>
 
     <div class="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5 sm:p-0">
+      <!-- 搜索结果来自全部分类：醒目标出所属分类 -->
+      <span v-if="sourcePath" class="self-start inline-flex max-w-full items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary" :title="sourcePath">
+        <FolderOpen class="h-3 w-3 flex-none" aria-hidden="true" />
+        <span class="sr-only">{{ t('luna.sourceLabel') }}</span>
+        <span class="truncate">{{ sourcePath }}</span>
+      </span>
       <!-- 窄屏标题固定占两行高，同为有图（或同为无图）的一排卡片底部仍对齐 -->
       <h3 class="line-clamp-2 min-h-[2.75em] break-words text-[13px] font-medium leading-snug text-foreground sm:min-h-0 sm:text-sm">{{ title }}</h3>
 
@@ -113,12 +125,13 @@
 <script setup lang="ts">
 import { computed, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AlarmClock, CircleCheck, ShoppingCart, XCircle } from 'lucide-vue-next'
+import { AlarmClock, CircleCheck, FolderOpen, ShoppingCart, XCircle } from 'lucide-vue-next'
 import { getFirstImageUrl, getImageUrl } from '../../../utils/image'
 import { useLocalized, useProductLabels } from '../../../composables/useProduct'
 
-const props = withDefaults(defineProps<{ product: any; categoryLabel?: string; layout?: 'card' | 'list' }>(), {
+const props = withDefaults(defineProps<{ product: any; categoryLabel?: string; sourcePath?: string; layout?: 'card' | 'list' }>(), {
   categoryLabel: '',
+  sourcePath: '',
   layout: 'card',
 })
 

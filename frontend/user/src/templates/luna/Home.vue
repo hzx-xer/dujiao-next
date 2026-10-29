@@ -16,18 +16,18 @@
             :key="group.id"
             type="button"
             class="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-[13px] transition sm:h-12 sm:min-w-[108px] sm:max-w-full sm:gap-2 sm:px-5 sm:text-sm"
-            :class="activeGroup?.id === group.id ? 'luna-gradient font-semibold' : 'bg-secondary text-foreground hover:bg-primary/10 hover:text-primary'"
-            :aria-pressed="activeGroup?.id === group.id"
-            @click="selectCategory(group.id)"
+            :class="highlightedGroupId === group.id ? 'luna-gradient font-semibold' : 'bg-secondary text-foreground hover:bg-primary/10 hover:text-primary'"
+            :aria-pressed="highlightedGroupId === group.id"
+            @click="pickCategory(group.id)"
           >
             <img v-if="group.icon" :src="getImageUrl(group.icon)" alt="" loading="lazy" class="h-5 w-5 flex-none rounded object-cover" />
             <span class="truncate">{{ catName(group) }}</span>
             <!-- 有子分类的一级分类带个小箭头，提示点开还有下一级 -->
-            <ChevronDown v-if="group.children.length" class="h-3.5 w-3.5 flex-none opacity-70 transition-transform" :class="{ 'rotate-180': activeGroup?.id === group.id }" />
+            <ChevronDown v-if="group.children.length" class="h-3.5 w-3.5 flex-none opacity-70 transition-transform" :class="{ 'rotate-180': highlightedGroupId === group.id }" />
           </button>
         </div>
 
-        <!-- 子分类面板：「全部」看父分类及所有子分类的商品，点子分类只看该子分类 -->
+        <!-- 子分类面板：「全部」看父分类及所有子分类的商品，点子分类只看该子分类；搜索时不显示 -->
         <Transition
           enter-active-class="transition duration-200 ease-out"
           enter-from-class="-translate-y-1 opacity-0"
@@ -36,7 +36,7 @@
           mode="out-in"
         >
           <div
-            v-if="activeGroup?.children.length"
+            v-if="!searching && activeGroup?.children.length"
             :key="activeGroup.id"
             class="mt-3 flex items-center gap-2 rounded-[10px] border border-primary/15 bg-primary/5 p-1.5 sm:p-2"
           >
@@ -70,18 +70,21 @@
           <h2 class="flex min-w-0 items-center gap-2 text-lg font-semibold text-foreground">
             <ShoppingBag class="h-5 w-5 flex-none text-primary" />
             {{ t('luna.chooseProduct') }}
-            <!-- 当前浏览范围，例如「游戏充值 / Steam 钱包」 -->
-            <span v-if="selectedCategoryPath" class="truncate text-sm font-normal text-muted-foreground">· {{ selectedCategoryPath }}</span>
+            <!-- 搜索时是全部商品中的结果数，否则是当前浏览范围，例如「游戏充值 / Steam 钱包」 -->
+            <span v-if="searching" class="truncate text-sm font-normal text-muted-foreground">· {{ resultKeyword === searchQuery.trim() ? t('luna.searchSummary', { count: totalCount }) : t('luna.searchingAll') }}</span>
+            <span v-else-if="selectedCategoryPath" class="truncate text-sm font-normal text-muted-foreground">· {{ selectedCategoryPath }}</span>
           </h2>
-          <div class="relative w-full sm:w-64">
-            <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div class="relative w-full sm:w-80">
+            <Search class="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
             <input
               v-model="searchQuery"
-              class="h-9 w-full rounded-full border border-border bg-card pl-9 pr-9 text-sm text-foreground transition-colors placeholder:text-muted-foreground hover:border-hairline-strong focus:border-primary focus:outline-none"
-              :placeholder="t('products.searchBoxPlaceholder')"
+              type="search"
+              enterkeyhint="search"
+              class="h-10 w-full rounded-full border border-border bg-card pl-10 pr-10 text-sm text-foreground transition-colors placeholder:text-muted-foreground hover:border-hairline-strong focus:border-primary focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+              :placeholder="t('luna.searchPlaceholder')"
               :aria-label="t('products.searchLabel')"
             />
-            <button v-if="searchQuery" type="button" class="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" :aria-label="t('blog.searchClear')" @click="clearSearch"><X class="h-3.5 w-3.5" /></button>
+            <button v-if="searchQuery" type="button" class="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" :aria-label="t('blog.searchClear')" @click="clearSearch"><X class="h-4 w-4" /></button>
           </div>
         </div>
 
@@ -91,13 +94,13 @@
         </div>
 
         <div v-else-if="products.length" class="mt-4 grid" :class="gridClass">
-          <LunaProductCard v-for="product in products" :key="product.id" :product="product" :layout="productLayout" :category-label="productSubcategoryLabel(product)" />
+          <LunaProductCard v-for="product in products" :key="product.id" :product="product" :layout="productLayout" :category-label="productSubcategoryLabel(product)" :source-path="productSourcePath(product)" />
         </div>
 
         <!-- 空态 -->
         <div v-else class="mt-4 flex flex-col items-center gap-3 rounded-[10px] border border-dashed py-14 text-center text-sm text-muted-foreground">
-          <component :is="searchQuery ? SearchX : PackageOpen" class="h-11 w-11 opacity-60" />
-          <p>{{ searchQuery ? t('products.emptyFiltered') : t('products.empty') }}</p>
+          <component :is="resultKeyword ? SearchX : PackageOpen" class="h-11 w-11 opacity-60" />
+          <p class="max-w-full break-words px-4">{{ resultKeyword ? t('luna.searchEmpty', { q: resultKeyword }) : t('products.empty') }}</p>
           <Button v-if="searchQuery" variant="outline" size="sm" class="rounded-full" @click="clearSearch">{{ t('products.clearFilters') }}</Button>
         </div>
 
@@ -144,6 +147,8 @@ const {
   searchQuery,
   currentPage,
   totalPages,
+  totalCount,
+  resultKeyword,
   categoryGroups,
   categoryMap,
   selectCategory,
@@ -151,9 +156,12 @@ const {
   clearSearch,
   initialize,
   cleanup,
-} = useProductList({ pageSize: 24, homeRouteName: 'home', defaultToFirstCategory: true })
+} = useProductList({ pageSize: 24, homeRouteName: 'home', defaultToFirstCategory: true, searchAllCategories: true })
 
 const catName = (cat: PublicCategory) => getLocalizedText(cat.name) || cat.slug || ''
+
+/** 有关键词时在全部商品中搜索，不受选中分类限制 */
+const searching = computed(() => Boolean(searchQuery.value.trim()))
 
 /** 当前高亮的顶级分类：选中的就是它，或选中的是它的子分类 */
 const activeGroup = computed(() => {
@@ -162,6 +170,19 @@ const activeGroup = computed(() => {
   const parentId = normalizeCategoryParentId(selected.parent_id)
   return categoryGroups.value.find((group) => group.id === (parentId > 0 ? parentId : selected.id))
 })
+
+/** 高亮的顶级分类：搜索结果来自全部分类，搜索时不高亮任何分类 */
+const highlightedGroupId = computed(() => (searching.value ? undefined : activeGroup.value?.id))
+
+/** 点分类按钮：搜索中先退出搜索，再进入该分类 */
+const pickCategory = (categoryId: number) => {
+  if (searching.value && selectedCategory.value === categoryId) {
+    clearSearch()
+    return
+  }
+  if (searching.value) searchQuery.value = ''
+  selectCategory(categoryId)
+}
 
 /** 子分类面板的按钮：第一个「全部」就是父分类本身 */
 const subcategoryItems = computed(() => {
@@ -176,9 +197,16 @@ const subcategoryItems = computed(() => {
 /** 正在看父分类（全部）时，商品卡片标出各自所属的子分类 */
 const productSubcategoryLabel = (product: { category_id?: number }) => {
   const group = activeGroup.value
-  if (!group?.children.length || selectedCategory.value !== group.id) return ''
+  if (resultKeyword.value || !group?.children.length || selectedCategory.value !== group.id) return ''
   const cat = product.category_id ? categoryMap.value.get(Number(product.category_id)) : undefined
   return cat && cat.id !== group.id ? catName(cat) : ''
+}
+
+/** 搜索结果来自全部分类，卡片标出完整分类路径，例如「游戏充值 / Steam 钱包」 */
+const productSourcePath = (product: { category_id?: number }) => {
+  if (!resultKeyword.value) return ''
+  const cat = product.category_id ? categoryMap.value.get(Number(product.category_id)) : undefined
+  return buildCategoryPath(cat, categoryMap.value, (name) => getLocalizedText(name))
 }
 
 // 窄屏子分类是横滑的一行，选中项可能在屏幕外（如直接打开 /categories/xxx），滚到可见处

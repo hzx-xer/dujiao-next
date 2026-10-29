@@ -14,6 +14,8 @@ export interface UseProductListOptions {
    * 而不是 null（全部）。站点没有任何分类时仍回退为全部商品。
    */
   defaultToFirstCategory?: boolean
+  /** 有搜索关键词时忽略选中的分类，在全部商品中搜索 */
+  searchAllCategories?: boolean
 }
 
 export function useProductList(options: UseProductListOptions = {}) {
@@ -22,6 +24,7 @@ export function useProductList(options: UseProductListOptions = {}) {
     homeRouteName = 'home',
     categoryRouteName = 'category-products',
     defaultToFirstCategory = false,
+    searchAllCategories = false,
   } = options
 
   const router = useRouter()
@@ -35,6 +38,9 @@ export function useProductList(options: UseProductListOptions = {}) {
   const currentPage = ref(1)
   const pageSize = ref(defaultPageSize)
   const totalPages = ref(0)
+  const totalCount = ref(0)
+  /** 当前列表结果对应的关键词（输入框在防抖期间可能已经变了） */
+  const resultKeyword = ref('')
   const showFilterDrawer = ref(false)
   const expandedParentIds = ref<number[]>([])
 
@@ -147,7 +153,7 @@ export function useProductList(options: UseProductListOptions = {}) {
         page,
         page_size: pageSize.value,
       }
-      if (selectedCategory.value) {
+      if (selectedCategory.value && !(searchAllCategories && keyword)) {
         params.category_id = selectedCategory.value
       }
       if (keyword) {
@@ -155,8 +161,10 @@ export function useProductList(options: UseProductListOptions = {}) {
       }
       const response = await productAPI.list(params)
       products.value = response.data.data || []
+      resultKeyword.value = keyword
       if (response.data.pagination) {
         totalPages.value = response.data.pagination.total_page || 0
+        totalCount.value = response.data.pagination.total || 0
       }
       // 页码超出范围时回落到末页并重新加载
       if (totalPages.value > 0 && page > totalPages.value) {
@@ -345,6 +353,8 @@ export function useProductList(options: UseProductListOptions = {}) {
     currentPage,
     pageSize,
     totalPages,
+    totalCount,
+    resultKeyword,
     showFilterDrawer,
     expandedParentIds,
     categoryGroups,

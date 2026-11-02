@@ -40,7 +40,7 @@
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold">{{ paymentResultTitle }}</h2>
-          <p class="mt-1 text-[13px] text-muted-foreground">{{ showCryptoPayment ? t('luna.cryptoGuideTip', { token: cryptoToken || 'USDT' }) : paymentGuideTip }}</p>
+          <p class="mt-1 text-[13px] text-muted-foreground">{{ paymentGuideTip }}</p>
           <p class="mt-1.5 text-xs text-muted-foreground">{{ t('payment.methodLabel') }}：{{ resultChannelName }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -51,60 +51,21 @@
 
       <div class="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <!-- 加密货币收款：转账数量 / 网络 / 收款地址 / 剩余时间是付款人最需要核对的信息，放大突出 -->
-          <div v-if="showCryptoPayment" class="overflow-hidden rounded-xl border-2 border-primary/30 bg-card">
-            <div v-if="showCountdown" class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5" :class="countdownToneClass" role="timer">
-              <span class="inline-flex items-center gap-2 text-sm font-bold"><Clock class="h-[18px] w-[18px]" />{{ t('payment.countdownLabel') }}</span>
-              <span class="text-[28px] font-extrabold leading-none tabular-nums sm:text-[32px]">{{ countdownText }}</span>
-            </div>
-            <div class="grid gap-5 p-4 sm:grid-cols-[minmax(0,1fr)_196px] sm:p-5">
-              <div class="grid min-w-0 content-start gap-4">
-                <!-- 转账数量 -->
-                <div v-if="cryptoAmount">
-                  <div class="text-[13px] font-semibold text-muted-foreground">{{ t('luna.cryptoSendAmount') }}</div>
-                  <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span class="break-all text-[32px] font-extrabold leading-tight tabular-nums text-primary sm:text-[36px]">{{ cryptoAmount }}<span v-if="cryptoToken" class="ml-1.5 text-xl font-bold sm:text-2xl">{{ cryptoToken }}</span></span>
-                    <Button size="sm" class="rounded-full" @click="copyCryptoAmount"><component :is="amountCopied ? Check : Copy" />{{ amountCopied ? t('payment.copied') : t('luna.copyAmount') }}</Button>
-                  </div>
-                  <p class="mt-1.5 text-[13px] font-medium text-foreground">{{ t('luna.cryptoExactAmount') }}</p>
-                  <p class="mt-0.5 text-xs text-muted-foreground">{{ t('luna.cryptoOrderAmount', { amount: payableAmountDisplay }) }}</p>
-                </div>
-                <!-- 网络 -->
-                <div v-if="cryptoNetwork">
-                  <div class="text-[13px] font-semibold text-muted-foreground">{{ t('payment.cryptoChain') }}</div>
-                  <span class="mt-1.5 inline-flex items-center rounded-md bg-primary px-2.5 py-1 text-sm font-bold text-primary-foreground">{{ cryptoNetwork }}</span>
-                  <p class="mt-2 flex items-start gap-1.5 rounded-md bg-warning-soft px-3 py-2 text-[13px] font-semibold text-warning">
-                    <TriangleAlert class="mt-px h-4 w-4 flex-none" />
-                    <span>{{ t('luna.cryptoNetworkWarning', { network: cryptoNetwork }) }}</span>
-                  </p>
-                </div>
-                <!-- 收款地址：等宽字体，首尾几位加粗，方便和钱包里的地址比对 -->
-                <div v-if="cryptoWalletAddress">
-                  <div class="text-[13px] font-semibold text-muted-foreground">{{ t('luna.cryptoReceiveAddress') }}</div>
-                  <div class="mt-1.5 flex items-center gap-2 rounded-lg border-2 border-border bg-secondary py-1.5 pl-3 pr-1.5">
-                    <code class="min-w-0 flex-1 break-all font-mono text-[15px] leading-relaxed text-foreground"><span class="font-bold text-primary">{{ addressParts.head }}</span>{{ addressParts.middle }}<span class="font-bold text-primary">{{ addressParts.tail }}</span></code>
-                    <Button size="sm" class="flex-none rounded-md" @click="handleCopyWalletAddress"><component :is="walletAddressCopied ? Check : Copy" />{{ walletAddressCopied ? t('payment.copied') : t('luna.copy') }}</Button>
-                  </div>
-                  <p class="mt-1.5 text-xs text-muted-foreground">{{ t('luna.cryptoAddressCheck') }}</p>
-                </div>
-              </div>
-              <!-- 窄屏多半就在这台手机上付款，二维码放到最后 -->
-              <div class="flex flex-col items-center gap-2">
-                <div class="aspect-square w-full max-w-[196px] overflow-hidden rounded-lg border bg-white p-2"><img :src="qrImageUrl" alt="QR Code" class="h-full w-full object-contain" /></div>
-                <div class="text-center text-xs text-muted-foreground">{{ t('luna.cryptoScanHint') }}</div>
-              </div>
-            </div>
-            <div v-if="pollingActive" class="flex items-center gap-2 border-t px-4 py-2.5 text-[13px] text-muted-foreground sm:px-5">
-              <span class="relative flex h-2 w-2 flex-none"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75 motion-reduce:hidden"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-success"></span></span>
-              {{ t('payment.pollingHint') }}
-            </div>
-          </div>
-
           <!-- QR -->
-          <div v-else-if="showQRCode" class="flex flex-col items-center rounded-xl border bg-secondary p-[22px] text-center">
+          <div v-if="showQRCode" class="flex flex-col items-center rounded-xl border bg-secondary p-[22px] text-center">
             <div class="mb-3 text-[13px] text-muted-foreground">{{ paymentGuideTitle }}</div>
             <div class="aspect-square w-full max-w-[240px] overflow-hidden rounded-md bg-white p-2"><img :src="qrImageUrl" alt="QR Code" class="h-full w-full object-contain" /></div>
             <div v-if="qrUsingPayLinkFallback" class="mt-2.5 text-xs text-muted-foreground">{{ t('payment.qrFallbackHint') }}</div>
+            <div v-if="hasCryptoPaymentDetails" class="mt-4 grid grid-cols-1 w-full gap-2 rounded-md border p-3 text-left">
+              <div v-for="item in cryptoPaymentDetails" :key="item.key" class="flex justify-between gap-3 border-b pb-1.5 last:border-b-0 last:pb-0">
+                <span class="flex-none text-xs text-muted-foreground">{{ item.label }}</span>
+                <span class="break-all text-right text-[13px] font-semibold text-foreground">{{ item.value }}<span v-if="item.detail" class="text-muted-foreground"> ({{ item.detail }})</span></span>
+              </div>
+              <div v-if="cryptoWalletAddress" class="flex items-center justify-end gap-2 pt-1.5">
+                <Button variant="outline" size="sm" class="rounded-full" @click="handleCopyWalletAddress">{{ t('payment.copyWalletAddress') }}</Button>
+                <span v-if="walletAddressCopied" class="text-xs text-success">{{ t('payment.copied') }}</span>
+              </div>
+            </div>
           </div>
 
           <!-- 跳转链接 -->
@@ -128,7 +89,6 @@
             <div class="mt-1 text-xs text-muted-foreground">{{ t('payment.methodLabel') }}：{{ resultChannelName }}</div>
           </div>
           <PaymentAmountBreakdown
-            v-if="!showCryptoPayment"
             :order="order"
             :payment-result="paymentResult"
             :customer-fee-applied="customerFeeApplied"
@@ -143,7 +103,7 @@
             :format-discount-money="formatDiscountMoney"
             :has-discount-amount="hasDiscountAmount"
           />
-          <div v-if="paymentResult.expires_at && !showCryptoPayment" class="rounded-md border bg-secondary p-3.5 text-xs text-muted-foreground">
+          <div v-if="paymentResult.expires_at" class="rounded-md border bg-secondary p-3.5 text-xs text-muted-foreground">
             {{ t('payment.expiresAt') }}：{{ formatDate(paymentResult.expires_at) }}
           </div>
         </div>
@@ -297,17 +257,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Check, Clock, Copy, TriangleAlert } from 'lucide-vue-next'
+import { AlertCircle } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PaymentAmountBreakdown from '../../components/payment/PaymentAmountBreakdown.vue'
 import LunaCheckoutSteps from './components/LunaCheckoutSteps.vue'
 import LunaPaymentChannels from './components/LunaPaymentChannels.vue'
 import { usePayment } from '../../composables/usePayment'
-import { copyText } from '../../utils/clipboard'
 
 const { t } = useI18n()
 
@@ -328,74 +287,6 @@ const {
 } = usePayment()
 
 const route = useRoute()
-
-// ==================== 加密货币收款 ====================
-const cryptoDetail = (key: string) => String(cryptoPaymentDetails.value.find((item) => item.key === key)?.value || '')
-const showCryptoPayment = computed(() => showQRCode.value && hasCryptoPaymentDetails.value)
-const cryptoAmount = computed(() => cryptoDetail('amount'))
-
-const NETWORK_LABELS: Record<string, string> = {
-  tron: 'TRON (TRC20)',
-  trc20: 'TRON (TRC20)',
-  ethereum: 'Ethereum (ERC20)',
-  erc20: 'Ethereum (ERC20)',
-  'bnb smart chain': 'BNB Smart Chain (BEP20)',
-  bsc: 'BNB Smart Chain (BEP20)',
-  bep20: 'BNB Smart Chain (BEP20)',
-}
-
-const NATIVE_TOKENS = ['TRX', 'ETH', 'BNB']
-
-/** epusdt 只返回地址和链上数量，币种 / 网络从旧式渠道类型（usdt-trc20 / usdc-trc20 / trx）补出 */
-const legacyAsset = computed(() => {
-  const parts = String(paymentResult.value?.channel_type || '').toLowerCase().split('-').filter(Boolean)
-  if (parts[0] === 'trx') return { token: 'TRX', network: 'tron' }
-  if (parts[0] === 'usdt' || parts[0] === 'usdc') return { token: parts[0].toUpperCase(), network: parts[1] || '' }
-  return { token: '', network: '' }
-})
-const cryptoToken = computed(() => cryptoDetail('token') || legacyAsset.value.token)
-const cryptoNetwork = computed(() => {
-  const raw = cryptoDetail('chain') || legacyAsset.value.network
-  const label = NETWORK_LABELS[raw.toLowerCase()] || raw.toUpperCase()
-  // TRX / ETH / BNB 是链的原生币，不是 TRC20 / ERC20 / BEP20 代币，只显示链名
-  return NATIVE_TOKENS.includes(cryptoToken.value) ? label.replace(/\s*\(.*\)$/, '') : label
-})
-
-const addressParts = computed(() => {
-  const address = cryptoWalletAddress.value
-  if (address.length <= 16) return { head: address, middle: '', tail: '' }
-  return { head: address.slice(0, 6), middle: address.slice(6, -6), tail: address.slice(-6) }
-})
-
-const amountCopied = ref(false)
-let amountCopiedTimer: number | undefined
-const copyCryptoAmount = async () => {
-  if (!cryptoAmount.value) return
-  try {
-    await copyText(cryptoAmount.value)
-    amountCopied.value = true
-    window.clearTimeout(amountCopiedTimer)
-    amountCopiedTimer = window.setTimeout(() => { amountCopied.value = false }, 1500)
-  } catch {
-    // 复制失败时按钮文案不变，用户仍可手动选中数字
-  }
-}
-
-// 剩余时间配色：充足时主色，最后 3 分钟转橙色，过期变红
-const nowMs = ref(Date.now())
-let nowTimer: number | undefined
-onMounted(() => { nowTimer = window.setInterval(() => { nowMs.value = Date.now() }, 1000) })
-onUnmounted(() => {
-  window.clearInterval(nowTimer)
-  window.clearTimeout(amountCopiedTimer)
-})
-const countdownToneClass = computed(() => {
-  if (countdownExpired.value) return 'bg-danger-soft text-destructive'
-  const raw = paymentResult.value?.expires_at || order.value?.expires_at
-  const remaining = raw ? new Date(raw).getTime() - nowMs.value : NaN
-  if (Number.isFinite(remaining) && remaining <= 3 * 60 * 1000) return 'bg-warning-soft text-warning'
-  return 'bg-primary/10 text-primary'
-})
 
 /** 结算页带过来的「发起失败的渠道」id（见 useCheckout 的 pay_failed） */
 const failedChannelId = computed(() => Number(route.query.pay_failed) || 0)

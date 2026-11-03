@@ -29,6 +29,15 @@ test('long text is cut by character without splitting emoji', () => {
   assert.equal(Array.from(result)[8], '😀')
 })
 
+test('hostile long input stays fast and bounded', () => {
+  for (const input of ['<'.repeat(500000), '<script'.repeat(70000), '<a '.repeat(170000)]) {
+    const start = performance.now()
+    const result = toMetaDescription(input)
+    assert.ok(performance.now() - start < 300, 'should not block the page')
+    assert.ok(Array.from(result).length <= 160)
+  }
+})
+
 test('text exactly at the limit is not truncated', () => {
   assert.equal(toMetaDescription('a'.repeat(160)), 'a'.repeat(160))
 })

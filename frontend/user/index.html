@@ -38,7 +38,8 @@
         vault: { light: '#f6f6fb', dark: '#15151f' },
         luna: { light: '#e3f1fc', dark: '#0f1826' }
       };
-      var palette = colors[read('dj-storefront-template') || read('dj-storefront-template-last')] || colors.classic;
+      var saved = read('dj-storefront-template') || read('dj-storefront-template-last');
+      var palette = Object.prototype.hasOwnProperty.call(colors, saved) ? colors[saved] : colors.classic;
       var background = palette[theme];
       root.style.setProperty('--boot-bg', background);
       root.setAttribute('data-boot', '');

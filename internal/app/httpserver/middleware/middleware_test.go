@@ -18,7 +18,7 @@ func TestResolveAllowedOrigin(t *testing.T) {
 		t.Fatalf("wildcard should return *, got %s", got)
 	}
 
-	got = resolveAllowedOrigin("https://a.example.com", []string{"https://a.example.com", "https://b.example.com"}, false)
+	got = resolveAllowedOrigin("https://a.example.com", []string{"https://a.example.com", "https://b.example.com"})
 	if got != "https://a.example.com" {
 		t.Fatalf("allow-list should return matched origin, got %s", got)
 	}

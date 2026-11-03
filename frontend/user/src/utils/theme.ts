@@ -4,7 +4,7 @@ import { syncThemeColorMeta } from './bootScreen'
 // 旧版本会把自动判断的结果写进 dujiao_theme，分不清是不是用户选的，所以换一个只在手动切换时写入的键。
 // 这个键名和默认值在 index.html 的内联脚本里也有一份，修改时要同步。
 const THEME_CHOICE_KEY = 'dujiao_theme_choice'
-const DEFAULT_THEME: Theme = 'light'
+const DEFAULT_THEME: Theme = 'dark'
 
 type Theme = 'light' | 'dark'
 

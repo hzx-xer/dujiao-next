@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { resolveEarliestExpiryMs } from '../utils/cryptoPaymentDisplay'
 import { NavigationFailureType, isNavigationFailure, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { guestOrderAPI, paymentAPI, userOrderAPI, walletAPI } from '../api'
@@ -328,13 +329,11 @@ export function usePayment() {
     if (v) useBalance.value = true
   }, { immediate: true })
 
-  const expiresAtMs = computed(() => {
-    const raw = paymentResult.value?.expires_at || order.value?.expires_at
-    if (!raw) return null
-    const ts = new Date(raw).getTime()
-    if (Number.isNaN(ts)) return null
-    return ts
-  })
+  // 网关可能比订单更早停止收款监听，要按较早的时间提示用户
+  const expiresAtMs = computed(() => resolveEarliestExpiryMs(
+    paymentResult.value?.gateway_expires_at,
+    paymentResult.value?.expires_at || order.value?.expires_at,
+  ))
 
   const orderExpired = computed(() => {
     if (!order.value?.expires_at) return false
@@ -1377,6 +1376,11 @@ export function usePayment() {
     payLinkOpenedTip,
     // crypto / qr
     cryptoWalletAddress,
+    cryptoChainAmount,
+    cryptoChain,
+    cryptoTokenLabel,
+    qrDisplayContent,
+    expiresAtMs,
     cryptoPaymentDetails,
     hasCryptoPaymentDetails,
     qrUsingPayLinkFallback,

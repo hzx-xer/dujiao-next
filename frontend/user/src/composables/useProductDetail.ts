@@ -5,6 +5,7 @@ import { useHead } from '@unhead/vue'
 import { useAppStore } from '../stores/app'
 import { productAPI } from '../api'
 import { getImageUrl } from '../utils/image'
+import { toMetaDescription } from '../utils/metaDescription'
 import { useCartStore } from '../stores/cart'
 import { useBuyNowStore } from '../stores/buyNow'
 import { useUserAuthStore } from '../stores/userAuth'
@@ -591,7 +592,7 @@ export function useProductDetail(options: { onLoaded?: () => void } = {}) {
       if (!product.value) return []
       const seoMeta = product.value.seo_meta || {}
       const seoKeywords = getLocalizedText(seoMeta.keywords) || (typeof seoMeta.keywords === 'string' ? seoMeta.keywords : '')
-      const seoDescription = getLocalizedText(seoMeta.description) || (typeof seoMeta.description === 'string' ? seoMeta.description : '')
+      const seoDescription = getLocalizedText(seoMeta.description) || (typeof seoMeta.description === 'string' ? seoMeta.description : '') || toMetaDescription(getLocalizedText(product.value.description))
       const tags = []
 
       if (seoKeywords) tags.push({ name: 'keywords', content: seoKeywords })

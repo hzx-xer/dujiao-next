@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
+import { compressImageForUpload } from '@/utils/imageCompress'
 import type { AdminMedia } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -152,7 +153,7 @@ async function handleDialogUpload(e: Event) {
     const batch = fileList.slice(i, i + 3)
     await Promise.allSettled(batch.map(async (file) => {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', await compressImageForUpload(file))
       try {
         const res = await adminAPI.upload(formData, props.scene)
         const url = (res.data.data as any)?.url
@@ -219,7 +220,7 @@ async function doDirectUpload(files: File[]) {
     const batch = fileList.slice(i, i + 3)
     await Promise.allSettled(batch.map(async (file) => {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', await compressImageForUpload(file))
       try {
         const res = await adminAPI.upload(formData, props.scene)
         const url = (res.data.data as any)?.url

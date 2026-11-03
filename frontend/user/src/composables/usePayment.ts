@@ -1040,6 +1040,9 @@ export function usePayment() {
     return ['paid', 'fulfilling', 'partially_delivered', 'delivered', 'completed'].includes(status)
   }
 
+  // 已支付的订单正在跳转详情页，不能退回默认视图再展示一遍支付方式
+  const paymentCompleted = computed(() => shouldRedirect(order.value?.status))
+
   const resetRedirectState = () => {
     redirecting.value = false
     redirected.value = false
@@ -1394,6 +1397,7 @@ export function usePayment() {
     countdownText,
     showCountdown,
     showResultView,
+    paymentCompleted,
     pollingActive,
     orderItems,
     // amounts

@@ -65,6 +65,12 @@
         :action-to="backLink"
       />
 
+      <!-- 支付完成：跳转订单详情前的过渡 -->
+      <div v-else-if="paymentCompleted" class="flex flex-col items-center gap-3 rounded-2xl border bg-card px-4 py-14 text-center" role="status" data-testid="payment-completed">
+        <CheckCircle2 class="h-12 w-12 text-success" />
+        <p class="text-lg font-bold text-foreground">{{ t('payment.redirecting') }}</p>
+      </div>
+
       <div v-else-if="showResultView" class="space-y-6">
         <div class="border bg-card text-card-foreground shadow-sm rounded-2xl p-6">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -490,7 +496,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { Copy, ExternalLink } from 'lucide-vue-next'
+import { CheckCircle2, Copy, ExternalLink } from 'lucide-vue-next'
 import { pageAlertVariant, pageAlertToneClass } from '../utils/alerts'
 import PaymentAmountBreakdown from '../components/payment/PaymentAmountBreakdown.vue'
 import PaymentChannelSelector from '../components/payment/PaymentChannelSelector.vue'
@@ -511,7 +517,7 @@ const {
   selectedChannel, selectedChannelName, cachedChannelName, resultChannelName, interactionLabel,
   paymentResultTitle, paymentGuideTitle, paymentGuideTip, showPayLink, showTelegramPayHint, payLinkOpenedTip,
   cryptoWalletAddress, cryptoPaymentDetails, hasCryptoPaymentDetails, qrUsingPayLinkFallback, showQRCode, qrImageUrl,
-  orderExpired, orderCanceled, paymentAlert, countdownExpired, countdownText, showCountdown, showResultView, pollingActive, orderItems,
+  orderExpired, orderCanceled, paymentAlert, countdownExpired, countdownText, showCountdown, showResultView, paymentCompleted, pollingActive, orderItems,
   customerFeeApplied, customerFeeAmountDisplay, payableAmountDisplay, walletBalanceDisplay,
   expectedWalletPaidDisplay, expectedOnlinePayDisplay, expectedOnlinePayCents, requiresOnlineChannel,
   paymentWalletPaidDisplay, paymentOnlinePayDisplay, isChannelDisabledForAmount, channelAmountLimitHint, canSubmitPayment,

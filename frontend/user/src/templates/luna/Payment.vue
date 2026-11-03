@@ -36,6 +36,13 @@
       <Button as-child class="mt-2 rounded-full" size="sm"><RouterLink :to="backLink">{{ t('payment.backToOrders') }}</RouterLink></Button>
     </div>
 
+    <!-- 支付完成：跳转订单详情前的过渡 -->
+    <div v-else-if="paymentCompleted" class="mb-[18px] flex flex-col items-center gap-3 luna-panel px-4 py-14 text-center" role="status" data-testid="payment-completed">
+      <CheckCircle2 class="h-12 w-12 text-success" />
+      <p class="text-lg font-bold text-foreground">{{ t('payment.redirecting') }}</p>
+      <Button as-child variant="outline" size="sm" class="mt-1 rounded-full"><RouterLink :to="backLink">{{ t('payment.backToOrders') }}</RouterLink></Button>
+    </div>
+
     <!-- 结果视图：加密货币收款 -->
     <LunaCryptoPayment
       v-else-if="showCryptoPayment"
@@ -301,7 +308,7 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, CheckCircle2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PaymentAmountBreakdown from '../../components/payment/PaymentAmountBreakdown.vue'
@@ -321,7 +328,7 @@ const {
   paymentResultTitle, paymentGuideTitle, paymentGuideTip, showPayLink, showTelegramPayHint, payLinkOpenedTip,
   cryptoWalletAddress, cryptoChainAmount, cryptoChain, cryptoTokenLabel, qrDisplayContent, expiresAtMs,
   cryptoPaymentDetails, hasCryptoPaymentDetails, qrUsingPayLinkFallback, showQRCode, qrImageUrl,
-  orderExpired, orderCanceled, paymentAlert, countdownExpired, countdownText, showCountdown, showResultView, pollingActive, orderItems,
+  orderExpired, orderCanceled, paymentAlert, countdownExpired, countdownText, showCountdown, showResultView, paymentCompleted, pollingActive, orderItems,
   customerFeeApplied, customerFeeAmountDisplay, payableAmountDisplay, walletBalanceDisplay,
   expectedWalletPaidDisplay, expectedOnlinePayDisplay, expectedOnlinePayCents, requiresOnlineChannel,
   paymentWalletPaidDisplay, paymentOnlinePayDisplay, isChannelDisabledForAmount, channelAmountLimitHint, canSubmitPayment,

@@ -23,8 +23,13 @@
     (function () {
       var root = document.documentElement;
       var read = function (key) { try { return localStorage.getItem(key); } catch (e) { return null; } };
-      // 默认黑夜；键名和默认值需与 src/utils/theme.ts 保持一致
-      var theme = read('dujiao_theme_choice') === 'light' ? 'light' : 'dark';
+      // 主题优先级：用户手动选择 > 系统设置 > 默认黑夜。规则需与 src/utils/theme.ts 保持一致
+      var theme = read('dujiao_theme_choice');
+      if (theme !== 'dark' && theme !== 'light') {
+        var prefersLight = false;
+        try { prefersLight = matchMedia('(prefers-color-scheme: light)').matches; } catch (e) {}
+        theme = prefersLight ? 'light' : 'dark';
+      }
       if (theme === 'dark') root.classList.add('dark');
       root.style.colorScheme = theme;
       // 与各模板的页面底色保持一致；首次访问还不知道模板时用默认模板的颜色

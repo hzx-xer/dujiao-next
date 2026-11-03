@@ -1,11 +1,16 @@
 <template>
   <div class="mx-auto w-full max-w-[1100px] px-6 pb-8">
-    <div class="my-5 flex items-start justify-between gap-4">
-      <div>
+    <div class="my-5 flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
         <h1 class="mb-1.5 text-3xl font-extrabold">{{ t('guestOrderDetail.title') }}</h1>
         <p class="text-muted-foreground">{{ t('guestOrderDetail.subtitle') }}</p>
       </div>
-      <RouterLink class="text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary" to="/guest/orders">{{ t('guestOrderDetail.backSearch') }}</RouterLink>
+      <div class="flex min-w-0 max-w-full flex-wrap items-center gap-3">
+        <RouterLink class="text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary" to="/guest/orders">{{ t('guestOrderDetail.backSearch') }}</RouterLink>
+        <Button as-child variant="outline" class="h-11 flex-none rounded-full border-primary/40 bg-card px-4 font-bold text-primary hover:bg-primary/10 hover:text-primary sm:h-10" data-testid="continue-shopping">
+          <RouterLink to="/products"><ShoppingBag /> {{ t('orders.continueShopping') }}</RouterLink>
+        </Button>
+      </div>
     </div>
 
     <!-- 游客验证 -->
@@ -66,7 +71,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, ShoppingBag } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

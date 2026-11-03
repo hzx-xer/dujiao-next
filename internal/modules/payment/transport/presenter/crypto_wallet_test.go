@@ -1,7 +1,10 @@
 package presenter
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/dujiao-next/internal/constants"
 	"github.com/dujiao-next/internal/shared/jsonmap"
@@ -149,3 +152,86 @@ func TestExtractCryptoWalletInfo_DujiaoPayWrappedPayload(t *testing.T) {
 		t.Fatalf("unexpected info: %+v", info)
 	}
 }
+
+func TestExtractCryptoWalletInfo_EpusdtQRIncludesChainLabels(t *testing.T) {
+	info := ExtractCryptoWalletInfo(constants.PaymentProviderEpusdt, constants.PaymentInteractionQR, jsonmap.JSON{
+		"data": map[string]any{
+			"receive_address": "TAddr",
+			"actual_amount":   "4.25",
+			"chain":           "tron",
+			"token_id":        "tron-usdt",
+		},
+	})
+
+	if info.Address != "TAddr" || info.ChainAmount != "4.25" || info.Chain != "tron" || info.TokenID != "tron-usdt" {
+		t.Fatalf("unexpected info: %+v", info)
+	}
+}
+
+func TestExtractCryptoGatewayExpiresAt(t *testing.T) {
+	createdAt := time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)
+	payloadWith := func(value any) jsonmap.JSON {
+		return jsonmap.JSON{"data": map[string]any{"expiration_time": value}}
+	}
+	absolute := createdAt.Add(30 * time.Minute)
+
+	tests := []struct {
+		name      string
+		provider  string
+		mode      string
+		payload   jsonmap.JSON
+		createdAt time.Time
+		want      *time.Time
+	}{
+		{name: "relative seconds number", provider: constants.PaymentProviderBepusdt, mode: constants.PaymentInteractionQR, payload: payloadWith(float64(1199)), createdAt: createdAt, want: ptrTime(createdAt.Add(1199 * time.Second))},
+		{name: "relative seconds string", provider: constants.PaymentProviderEpusdt, mode: constants.PaymentInteractionQR, payload: payloadWith("600"), createdAt: createdAt, want: ptrTime(createdAt.Add(600 * time.Second))},
+		{name: "absolute unix seconds", provider: constants.PaymentProviderEpusdt, mode: constants.PaymentInteractionQR, payload: payloadWith(float64(absolute.Unix())), createdAt: createdAt, want: &absolute},
+		{name: "absolute unix millis", provider: constants.PaymentProviderEpusdt, mode: constants.PaymentInteractionQR, payload: payloadWith(float64(absolute.UnixMilli())), createdAt: createdAt, want: &absolute},
+		{name: "relative without created at", provider: constants.PaymentProviderBepusdt, mode: constants.PaymentInteractionQR, payload: payloadWith(float64(600))},
+		{name: "missing field", provider: constants.PaymentProviderBepusdt, mode: constants.PaymentInteractionQR, payload: jsonmap.JSON{"data": map[string]any{}}, createdAt: createdAt},
+		{name: "zero", provider: constants.PaymentProviderBepusdt, mode: constants.PaymentInteractionQR, payload: payloadWith(float64(0)), createdAt: createdAt},
+		{name: "not numeric", provider: constants.PaymentProviderBepusdt, mode: constants.PaymentInteractionQR, payload: payloadWith("soon"), createdAt: createdAt},
+		{name: "redirect mode ignored", provider: constants.PaymentProviderBepusdt, mode: constants.PaymentInteractionRedirect, payload: payloadWith(float64(600)), createdAt: createdAt},
+		{name: "other provider ignored", provider: constants.PaymentProviderDujiaoPay, mode: constants.PaymentInteractionQR, payload: payloadWith(float64(600)), createdAt: createdAt},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractCryptoGatewayExpiresAt(tt.provider, tt.mode, tt.payload, tt.createdAt)
+			switch {
+			case tt.want == nil && got != nil:
+				t.Fatalf("got %v, want nil", got)
+			case tt.want != nil && (got == nil || !got.Equal(*tt.want)):
+				t.Fatalf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// 网关响应不可信：异常值不能让付款接口序列化失败，也不能把支付显示成已到期。
+func TestExtractCryptoGatewayExpiresAt_RejectsAbnormalValues(t *testing.T) {
+	createdAt := time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)
+	for _, value := range []any{"NaN", "Inf", "-Inf", "-1", "1e18", "1e30", float64(1e18), "999999999999", "1e15"} {
+		t.Run(fmt.Sprint(value), func(t *testing.T) {
+			got := ExtractCryptoGatewayExpiresAt(constants.PaymentProviderBepusdt, constants.PaymentInteractionQR, jsonmap.JSON{
+				"data": map[string]any{"expiration_time": value},
+			}, createdAt)
+			if got != nil {
+				t.Fatalf("got %v, want nil", got)
+			}
+		})
+	}
+}
+
+func TestExtractCryptoGatewayExpiresAt_ResultAlwaysSerializes(t *testing.T) {
+	createdAt := time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)
+	for _, value := range []any{float64(1), "999999999", float64(1_000_000_000), "253402300799", float64(1_000_000_000_000), "999999999999999"} {
+		got := ExtractCryptoGatewayExpiresAt(constants.PaymentProviderBepusdt, constants.PaymentInteractionQR, jsonmap.JSON{
+			"data": map[string]any{"expiration_time": value},
+		}, createdAt)
+		if _, err := json.Marshal(LatestPaymentResp{GatewayExpiresAt: got}); err != nil {
+			t.Fatalf("expiration_time %v: response must serialize, got %v", value, err)
+		}
+	}
+}
+
+func ptrTime(value time.Time) *time.Time { return &value }

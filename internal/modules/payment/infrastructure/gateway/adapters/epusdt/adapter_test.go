@@ -3,6 +3,8 @@ package epusdtadapter
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	paymentcontract "github.com/dujiao-next/internal/modules/payment/contract"
@@ -10,6 +12,9 @@ import (
 	"github.com/dujiao-next/internal/constants"
 	"github.com/dujiao-next/internal/modules/payment/infrastructure/gateway/epusdt"
 	"github.com/dujiao-next/internal/shared/jsonmap"
+	"github.com/dujiao-next/internal/shared/money"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestEpusdtAdapter_Type(t *testing.T) {
@@ -105,5 +110,88 @@ func TestEpusdtAdapter_MapEpusdtError(t *testing.T) {
 				t.Fatalf("mapEpusdtError(%v) errors.Is %v = false, want true", tc.in, tc.want)
 			}
 		})
+	}
+}
+
+func createEpusdtTestPayment(t *testing.T, gatewayResponse string, orderMode string, mode string) *paymentcontract.GatewayCreateResult {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(gatewayResponse))
+	}))
+	t.Cleanup(server.Close)
+
+	result, err := NewEpusdtAdapter().CreatePayment(context.Background(), jsonmap.JSON{
+		"gateway_url": server.URL,
+		"pid":         "1000",
+		"secret_key":  "sk-test",
+		"order_mode":  orderMode,
+		"token":       "USDT",
+		"network":     "TRON",
+		"notify_url":  "https://example.com/notify",
+		"return_url":  "https://example.com/return",
+	}, paymentcontract.GatewayCreateInput{
+		OrderNo: "ORDER_1",
+		Subject: "test",
+		Amount:  money.FromDecimal(decimal.RequireFromString("28.88")),
+		Extra:   jsonmap.JSON{"interaction_mode": mode},
+	})
+	if err != nil {
+		t.Fatalf("CreatePayment() error = %v", err)
+	}
+	return result
+}
+
+func TestEpusdtAdapter_CreatePayment_QRModeUsesReceiveAddress(t *testing.T) {
+	result := createEpusdtTestPayment(t,
+		`{"status_code":200,"data":{"trade_id":"T1","actual_amount":"4.25","receive_address":" TAddr "}}`,
+		constants.PaymentEpusdtOrderModeTransaction, constants.PaymentInteractionQR)
+
+	if result.QRCodeURL != "TAddr" {
+		t.Fatalf("QRCodeURL = %q, want the receive address", result.QRCodeURL)
+	}
+	if result.RedirectURL != "" {
+		t.Fatalf("RedirectURL = %q, want empty in qr mode", result.RedirectURL)
+	}
+	data, _ := result.Payload["data"].(map[string]interface{})
+	if data["chain"] != "tron" || data["token_id"] != "tron-usdt" {
+		t.Fatalf("payload chain/token_id = %v / %v", data["chain"], data["token_id"])
+	}
+	if data["actual_amount"] != "4.25" {
+		t.Fatalf("gateway fields must be preserved, got actual_amount = %v", data["actual_amount"])
+	}
+}
+
+func TestEpusdtAdapter_CreatePayment_QRModeWithoutAddressKeepsPayLink(t *testing.T) {
+	result := createEpusdtTestPayment(t,
+		`{"status_code":200,"data":{"trade_id":"T1","actual_amount":"4.25"}}`,
+		constants.PaymentEpusdtOrderModeTransaction, constants.PaymentInteractionQR)
+
+	if result.QRCodeURL == "" || result.QRCodeURL != result.RedirectURL {
+		t.Fatalf("expected pay link fallback, got qr=%q redirect=%q", result.QRCodeURL, result.RedirectURL)
+	}
+}
+
+func TestEpusdtAdapter_CreatePayment_RedirectModeKeepsPayLink(t *testing.T) {
+	result := createEpusdtTestPayment(t,
+		`{"status_code":200,"data":{"trade_id":"T1","receive_address":"TAddr"}}`,
+		constants.PaymentEpusdtOrderModeTransaction, constants.PaymentInteractionRedirect)
+
+	if result.RedirectURL == "" || result.QRCodeURL != result.RedirectURL {
+		t.Fatalf("redirect mode must keep pay link, got qr=%q redirect=%q", result.QRCodeURL, result.RedirectURL)
+	}
+}
+
+func TestEpusdtAdapter_CreatePayment_CashierModeOmitsAssetLabels(t *testing.T) {
+	result := createEpusdtTestPayment(t,
+		`{"status_code":200,"data":{"trade_id":"T1"}}`,
+		constants.PaymentEpusdtOrderModeCashier, constants.PaymentInteractionRedirect)
+
+	data, _ := result.Payload["data"].(map[string]interface{})
+	if _, ok := data["chain"]; ok {
+		t.Fatalf("cashier mode must not claim a chain: %v", data)
+	}
+	if _, ok := data["token_id"]; ok {
+		t.Fatalf("cashier mode must not claim a token: %v", data)
 	}
 }

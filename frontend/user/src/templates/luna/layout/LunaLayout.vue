@@ -123,6 +123,7 @@ import { useCartStore } from '../../../stores/cart'
 import { useUserAuthStore } from '../../../stores/userAuth'
 import { useNavConfig } from '../../../composables/useNavConfig'
 import { useTheme } from '../../../utils/theme'
+import { finishBootScreen } from '../../../utils/bootScreen'
 import { getImageUrl } from '../../../utils/image'
 import { getLocalizedText } from '../../../utils/resellerSiteConfig'
 import '../styles/luna.css'
@@ -200,6 +201,7 @@ onMounted(() => {
   document.addEventListener('keydown', onKeydown)
   // Teleport 到 body 的浮层在 .luna-scope 之外，靠 body 上的这个 class 拿到 luna 配色，详见 styles/luna.css
   document.body.classList.add('luna-tokens')
+  finishBootScreen()
 })
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick)

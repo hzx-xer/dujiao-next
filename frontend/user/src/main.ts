@@ -9,6 +9,7 @@ import router, { warmupCommonRoutes } from './router'
 import i18n, { detectLocale, setI18nLocale, warmupLocaleMessages } from './i18n'
 import { useTelegramMiniAppStore } from './stores/telegramMiniApp'
 import { initTemplateOverride } from './templates/registry'
+import { finishBootScreen } from './utils/bootScreen'
 
 // 预览用：?template=vault 持久化激活模板（站长正式切换走站点配置）
 initTemplateOverride()
@@ -36,6 +37,8 @@ Promise.all([
   setI18nLocale(detectLocale()),
 ]).then(() => {
   app.mount('#app')
+  // 兜底：外壳组件加载失败时也要撤掉启动背景，不影响之后切换主题
+  window.setTimeout(finishBootScreen, 5000)
 })
 
 void router.isReady().then(() => {

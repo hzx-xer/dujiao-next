@@ -145,6 +145,7 @@ import { useCartStore } from '../../../stores/cart'
 import { useUserAuthStore } from '../../../stores/userAuth'
 import { useNavConfig, type NavItem } from '../../../composables/useNavConfig'
 import { useTheme } from '../../../utils/theme'
+import { finishBootScreen } from '../../../utils/bootScreen'
 import { getImageUrl } from '../../../utils/image'
 import { getLocalizedText } from '../../../utils/resellerSiteConfig'
 // 本地自托管字体（替代 Google Fonts CDN），仅 vault 模板加载
@@ -240,6 +241,7 @@ onMounted(() => {
   // Teleport 到 body 的浮层（Toast / ConfirmDialog / 公告弹窗 / Select 下拉）在
   // .vault-scope 之外，靠 body 上的这个 class 拿到 vault 配色，详见 styles/vault.css
   document.body.classList.add('vault-tokens')
+  finishBootScreen()
 })
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick)

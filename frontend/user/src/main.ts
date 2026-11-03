@@ -1,3 +1,5 @@
+// 必须放在最前面：后面的模块在加载时就会读取 localStorage
+import './utils/storageFallback'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createHead } from '@unhead/vue/client'

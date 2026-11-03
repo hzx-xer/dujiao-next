@@ -53,14 +53,15 @@ func CORSMiddleware(cfg config.CORSConfig) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		allowedOrigin := resolveAllowedOrigin(origin, allowedOrigins, cfg.AllowCredentials)
+		allowedOrigin := resolveAllowedOrigin(origin, allowedOrigins)
 		if allowedOrigin != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 			if allowedOrigin != "*" {
 				c.Writer.Header().Add("Vary", "Origin")
 			}
 		}
-		if cfg.AllowCredentials {
+		// 只有白名单里明确列出的来源才能带凭据。通配符带凭据等于允许任意网站以用户身份跨域访问。
+		if cfg.AllowCredentials && allowedOrigin != "" && allowedOrigin != "*" {
 			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
 		c.Writer.Header().Set("Access-Control-Allow-Headers", headersHeader)
@@ -78,15 +79,12 @@ func CORSMiddleware(cfg config.CORSConfig) gin.HandlerFunc {
 	}
 }
 
-func resolveAllowedOrigin(origin string, allowedOrigins []string, allowCredentials bool) string {
+func resolveAllowedOrigin(origin string, allowedOrigins []string) string {
 	if len(allowedOrigins) == 0 {
 		return ""
 	}
 	for _, allowed := range allowedOrigins {
 		if allowed == "*" {
-			if allowCredentials && origin != "" {
-				return origin
-			}
 			return "*"
 		}
 	}

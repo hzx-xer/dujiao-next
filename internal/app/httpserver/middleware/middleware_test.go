@@ -7,18 +7,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dujiao-next/internal/config"
+
 	"github.com/gin-gonic/gin"
 )
 
 func TestResolveAllowedOrigin(t *testing.T) {
-	got := resolveAllowedOrigin("https://example.com", []string{"*"}, false)
+	got := resolveAllowedOrigin("https://example.com", []string{"*"})
 	if got != "*" {
-		t.Fatalf("wildcard without credentials should return *, got %s", got)
-	}
-
-	got = resolveAllowedOrigin("https://example.com", []string{"*"}, true)
-	if got != "https://example.com" {
-		t.Fatalf("wildcard with credentials should echo origin, got %s", got)
+		t.Fatalf("wildcard should return *, got %s", got)
 	}
 
 	got = resolveAllowedOrigin("https://a.example.com", []string{"https://a.example.com", "https://b.example.com"}, false)
@@ -26,9 +23,47 @@ func TestResolveAllowedOrigin(t *testing.T) {
 		t.Fatalf("allow-list should return matched origin, got %s", got)
 	}
 
-	got = resolveAllowedOrigin("https://x.example.com", []string{"https://a.example.com"}, false)
+	got = resolveAllowedOrigin("https://x.example.com", []string{"https://a.example.com"})
 	if got != "" {
 		t.Fatalf("unmatched origin should be empty, got %s", got)
+	}
+}
+
+func TestCORSMiddlewareCredentials(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	const origin = "https://evil.example"
+	tests := []struct {
+		name            string
+		allowed         []string
+		credentials     bool
+		wantOrigin      string
+		wantCredentials string
+	}{
+		{name: "wildcard with credentials never echoes the origin", allowed: []string{"*"}, credentials: true, wantOrigin: "*"},
+		{name: "wildcard without credentials", allowed: []string{"*"}, wantOrigin: "*"},
+		{name: "allow-listed origin can use credentials", allowed: []string{origin}, credentials: true, wantOrigin: origin, wantCredentials: "true"},
+		{name: "allow-listed origin without credentials", allowed: []string{origin}, wantOrigin: origin},
+		{name: "unlisted origin gets nothing", allowed: []string{"https://shop.example"}, credentials: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := gin.New()
+			r.Use(CORSMiddleware(config.CORSConfig{AllowedOrigins: tt.allowed, AllowCredentials: tt.credentials}))
+			r.GET("/ping", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+			for _, method := range []string{http.MethodGet, http.MethodOptions} {
+				req := httptest.NewRequest(method, "/ping", nil)
+				req.Header.Set("Origin", origin)
+				rec := httptest.NewRecorder()
+				r.ServeHTTP(rec, req)
+				if got := rec.Header().Get("Access-Control-Allow-Origin"); got != tt.wantOrigin {
+					t.Fatalf("%s Access-Control-Allow-Origin = %q, want %q", method, got, tt.wantOrigin)
+				}
+				if got := rec.Header().Get("Access-Control-Allow-Credentials"); got != tt.wantCredentials {
+					t.Fatalf("%s Access-Control-Allow-Credentials = %q, want %q", method, got, tt.wantCredentials)
+				}
+			}
+		})
 	}
 }
 

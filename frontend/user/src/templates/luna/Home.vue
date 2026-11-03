@@ -50,7 +50,7 @@
                 v-for="item in subcategoryItems"
                 :key="item.id"
                 type="button"
-                class="inline-flex h-8 max-w-[70vw] flex-none items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors sm:max-w-full"
+                class="inline-flex h-10 max-w-[70vw] flex-none items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors sm:h-8 sm:max-w-full"
                 :class="selectedCategory === item.id ? 'bg-card font-semibold text-primary shadow-[var(--luna-shadow-sm)] ring-1 ring-primary/40' : 'text-muted-foreground hover:bg-card/70 hover:text-primary'"
                 :aria-pressed="selectedCategory === item.id"
                 :data-active="selectedCategory === item.id || undefined"

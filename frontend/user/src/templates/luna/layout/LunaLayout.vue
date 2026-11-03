@@ -3,9 +3,9 @@
     <!-- 顶栏 -->
     <header class="sticky top-0 z-50 border-b border-white/40 bg-[color:var(--ui-bg-overlay)] backdrop-blur-md dark:border-white/5">
       <div class="mx-auto flex h-16 w-full max-w-[1100px] items-center gap-3 px-4 sm:gap-4 sm:px-6">
-        <RouterLink class="inline-flex min-w-0 items-center gap-2.5 text-[17px] font-bold text-foreground" to="/" :title="brandName">
+        <RouterLink class="inline-flex min-h-11 min-w-0 items-center gap-2.5 text-[17px] font-bold text-foreground" to="/" :title="brandName">
           <!-- 店名文字始终在（窄屏有 logo 时只对读屏可见），logo 不再重复朗读店名 -->
-          <img v-if="brandLogo" :src="brandLogo" alt="" class="h-9 max-w-[120px] flex-none object-contain sm:max-w-[150px]" />
+          <img v-if="brandLogo" :src="brandLogo" alt="" class="h-9 min-w-0 max-w-[64px] object-contain sm:max-w-[150px] sm:flex-none" />
           <span class="truncate" :class="{ 'max-sm:sr-only': brandLogo }">{{ brandName }}</span>
         </RouterLink>
 
@@ -27,15 +27,16 @@
           </template>
         </nav>
 
-        <div class="ml-auto flex flex-none items-center gap-1.5">
-          <button class="grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary" type="button" :aria-label="t('resellerConsole.common.toggleTheme')" @click="toggleTheme">
+        <div class="ml-auto flex flex-none items-center gap-0.5 sm:gap-1.5">
+          <!-- 手机上主题切换和购物车都收进更多菜单 -->
+          <button class="grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary max-sm:hidden" type="button" :aria-label="t('resellerConsole.common.toggleTheme')" @click="toggleTheme">
             <Sun v-if="theme === 'dark'" class="h-[18px] w-[18px]" />
             <Moon v-else class="h-[18px] w-[18px]" />
           </button>
 
           <!-- 语言切换（桌面） -->
           <div ref="langEl" class="relative max-[900px]:hidden">
-            <button class="grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary" type="button" :aria-label="t('navbar.selectLanguage')" :aria-expanded="langOpen" @click="toggleLang">
+            <button class="grid h-11 w-11 flex-none place-items-center sm:h-9 sm:w-9 rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary" type="button" :aria-label="t('navbar.selectLanguage')" :aria-expanded="langOpen" @click="toggleLang">
               <Languages class="h-[18px] w-[18px]" />
             </button>
             <div v-if="langOpen" class="absolute right-0 top-[calc(100%+8px)] z-[60] flex min-w-[160px] flex-col gap-0.5 luna-panel p-1.5 shadow-[var(--luna-shadow-lg)]">
@@ -46,29 +47,50 @@
             </div>
           </div>
 
-          <RouterLink class="relative grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary" to="/cart" :aria-label="t('navbar.cart')">
+          <RouterLink class="relative grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary max-sm:hidden" to="/cart" :aria-label="t('navbar.cart')">
             <ShoppingCart class="h-[18px] w-[18px]" />
             <span v-if="cartCount > 0" class="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-destructive px-1 text-[11px] font-bold text-primary-foreground">{{ cartCount }}</span>
           </RouterLink>
 
           <!-- 登录 / 退出（桌面） -->
           <RouterLink v-if="!userAuthStore.isAuthenticated" class="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary max-[900px]:hidden" to="/auth/login">{{ t('navbar.login') }}</RouterLink>
-          <button v-else type="button" class="grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive max-[900px]:hidden" :aria-label="t('navbar.logout')" :title="t('navbar.logout')" @click="userAuthStore.logout()"><LogOut class="h-[18px] w-[18px]" /></button>
+          <button v-else type="button" class="grid h-11 w-11 flex-none place-items-center sm:h-9 sm:w-9 rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive max-[900px]:hidden" :aria-label="t('navbar.logout')" :title="t('navbar.logout')" @click="userAuthStore.logout()"><LogOut class="h-[18px] w-[18px]" /></button>
 
-          <!-- luna 的标志性渐变胶囊：游客查单 / 个人中心 -->
-          <RouterLink class="luna-gradient inline-flex h-9 flex-none items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition hover:brightness-105 max-[520px]:hidden" :to="accountEntry.path">
-            <component :is="accountEntry.icon" class="h-4 w-4" />
+          <!-- luna 的标志性渐变胶囊：订单查询 / 个人中心。手机上也直接显示，不收进菜单 -->
+          <RouterLink class="luna-gradient relative ml-1 inline-flex h-10 flex-none items-center gap-1 whitespace-nowrap rounded-full px-3 text-[13px] font-bold transition before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] hover:brightness-105 sm:ml-0 sm:gap-1.5 sm:px-5 sm:text-sm sm:before:hidden" :to="accountEntry.path" data-testid="account-entry">
+            <component :is="accountEntry.icon" class="h-3.5 w-3.5 flex-none max-[374px]:hidden sm:h-4 sm:w-4" />
             {{ accountEntry.label }}
           </RouterLink>
 
           <!-- 移动端：更多菜单 -->
           <div ref="moreEl" class="relative hidden max-[900px]:block">
-            <button class="grid h-9 w-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary" type="button" :aria-label="t('navbar.more')" :aria-expanded="moreOpen" @click="toggleMore">
+            <button class="relative grid h-11 w-11 flex-none place-items-center sm:h-9 sm:w-9 rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary" type="button" :aria-label="t('navbar.more')" :aria-expanded="moreOpen" @click="toggleMore">
               <Menu v-if="!moreOpen" class="pointer-events-none h-[18px] w-[18px]" />
               <X v-else class="pointer-events-none h-[18px] w-[18px]" />
+              <!-- 手机上购物车收进了菜单，这里提示里面有商品 -->
+              <span v-if="cartCount > 0" class="pointer-events-none absolute right-0 top-0 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-destructive px-1 text-[11px] font-bold text-primary-foreground sm:hidden" data-testid="menu-cart-badge">{{ cartCount }}</span>
             </button>
             <div v-if="moreOpen" class="absolute right-0 top-[calc(100%+8px)] z-[60] flex min-w-[176px] flex-col gap-0.5 luna-panel p-1.5 shadow-[var(--luna-shadow-lg)]">
-              <RouterLink :to="accountEntry.path" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-secondary" @click="moreOpen = false">{{ accountEntry.label }}</RouterLink>
+              <!-- 购物车有商品时高亮：手机顶栏没有购物车图标，这里是唯一的提醒和入口 -->
+              <RouterLink
+                to="/cart"
+                class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors sm:hidden"
+                :class="cartCount > 0 ? 'bg-primary/10 font-bold text-primary hover:bg-primary/15' : 'font-medium text-muted-foreground hover:bg-secondary hover:text-foreground'"
+                data-testid="menu-cart"
+                @click="moreOpen = false"
+              >
+                <ShoppingCart class="h-[18px] w-[18px] flex-none" />
+                <span class="min-w-0">
+                  <span class="block">{{ t('navbar.cart') }}</span>
+                  <span v-if="cartCount > 0" class="block whitespace-nowrap text-xs font-medium" data-testid="menu-cart-hint">{{ t('luna.cartPendingHint', { count: cartCount }) }}</span>
+                </span>
+                <span v-if="cartCount > 0" class="ml-auto grid h-[22px] min-w-[22px] flex-none place-items-center rounded-full bg-destructive px-1.5 text-xs font-bold text-primary-foreground">{{ cartCount }}</span>
+              </RouterLink>
+              <button type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:hidden" data-testid="menu-theme" @click="toggleTheme">
+                <Sun v-if="theme === 'dark'" class="h-[18px] w-[18px] flex-none" />
+                <Moon v-else class="h-[18px] w-[18px] flex-none" />
+                {{ theme === 'dark' ? t('luna.themeLight') : t('luna.themeDark') }}
+              </button>
               <template v-for="item in secondaryNavItems" :key="`m-${item.key}`">
                 <RouterLink v-if="item.type === 'route'" :to="item.path" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" @click="moreOpen = false">{{ item.label }}</RouterLink>
                 <a v-else :href="item.path" :target="item.target" rel="noopener noreferrer" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" @click="moreOpen = false">{{ item.label }}</a>
@@ -95,8 +117,8 @@
     <footer class="px-4 pb-8 pt-10 text-center text-[13px] text-muted-foreground">
       <div class="mx-auto flex w-full max-w-[1100px] flex-col items-center gap-3">
         <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
-          <RouterLink to="/terms" class="transition-colors hover:text-primary">{{ t('footer.terms') }}</RouterLink>
-          <RouterLink to="/privacy" class="transition-colors hover:text-primary">{{ t('footer.privacy') }}</RouterLink>
+          <RouterLink to="/terms" class="inline-flex min-h-11 items-center transition-colors hover:text-primary sm:min-h-0">{{ t('footer.terms') }}</RouterLink>
+          <RouterLink to="/privacy" class="inline-flex min-h-11 items-center transition-colors hover:text-primary sm:min-h-0">{{ t('footer.privacy') }}</RouterLink>
           <a v-for="link in footerLinks" :key="link.name" :href="link.url || 'javascript:void(0)'" :target="link.url ? '_blank' : undefined" rel="noopener noreferrer" class="transition-colors hover:text-primary">{{ link.name }}</a>
           <a v-if="contact?.telegram" :href="contact.telegram" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 transition-colors hover:text-primary"><Send class="h-3.5 w-3.5" /> Telegram</a>
           <a v-if="contact?.whatsapp" :href="contact.whatsapp" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 transition-colors hover:text-primary"><MessageCircle class="h-3.5 w-3.5" /> WhatsApp</a>

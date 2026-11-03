@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { resolveEarliestExpiryMs } from '../utils/cryptoPaymentDisplay'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
@@ -92,6 +93,7 @@ export function useRechargeOrderDetail() {
     return details
   })
   const hasCryptoPaymentDetails = computed(() => cryptoPaymentDetails.value.length > 0)
+  const cryptoExpiresAtMs = computed(() => resolveEarliestExpiryMs(payment.value?.gateway_expires_at, payment.value?.expires_at))
   const customerFeeApplied = computed(() => {
     return isCustomerSurchargePayment(payment.value) && Number(recharge.value?.fee_amount || 0) > 0
   })
@@ -141,6 +143,11 @@ export function useRechargeOrderDetail() {
       interaction_mode: payload.interaction_mode,
       pay_url: payload.pay_url,
       qr_code: payload.qr_code,
+      wallet_address: payload.wallet_address,
+      chain_amount: payload.chain_amount,
+      chain: payload.chain,
+      token_id: payload.token_id,
+      gateway_expires_at: payload.gateway_expires_at,
       expires_at: payload.expires_at,
       status: payload.status,
       fee_policy: payload.fee_policy,
@@ -315,6 +322,11 @@ export function useRechargeOrderDetail() {
     qrUsingPayLinkFallback,
     showQRCode,
     cryptoWalletAddress,
+    cryptoChainAmount,
+    cryptoChain,
+    cryptoTokenLabel,
+    cryptoExpiresAtMs,
+    qrDisplayContent,
     cryptoPaymentDetails,
     hasCryptoPaymentDetails,
     customerFeeApplied,

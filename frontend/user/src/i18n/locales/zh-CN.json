@@ -77,6 +77,26 @@
     }
   },
   "luna": {
+    "cartPendingHint": "{count} 件商品待结算",
+    "themeLight": "白天模式",
+    "themeDark": "黑夜模式",
+    "copy": "复制",
+    "copyAmount": "复制数量",
+    "copyAddress": "复制地址",
+    "copyFailed": "复制失败，请手动选中复制",
+    "cryptoWaiting": "等待付款",
+    "cryptoSendAmount": "请转账",
+    "cryptoExactAmount": "请按此数量精确转账，少转或多转都可能无法自动到账",
+    "cryptoReceiveAddress": "收款地址",
+    "cryptoAddressCheck": "转账前请核对地址首尾几位是否一致",
+    "cryptoScanHint": "也可以用钱包 App 扫码",
+    "cryptoNetworkWarning": "仅支持 {network} 网络，转错网络资产将无法找回",
+    "cryptoOrderAmount": "订单金额 {amount}",
+    "cryptoOrderDetails": "金额明细",
+    "cryptoItemsSummary": "{title} 等 {count} 件商品",
+    "cryptoExpiredTitle": "收款已超时",
+    "cryptoExpiredHint": "收款地址已失效，请不要继续转账。如果已经转账，请联系客服并提供订单号。",
+    "cryptoRetry": "重新发起支付",
     "chooseCategory": "选择分类",
     "chooseProduct": "选择商品",
     "subcategories": "子分类",
@@ -92,7 +112,7 @@
     "guestEmailLabel": "接收邮箱",
     "guestEmailHelp": "付款后商品信息会发送到这个邮箱",
     "guestPasswordLabel": "查单密码",
-    "guestPasswordHelp": "自己设置，至少 6 位；之后用邮箱和密码在「游客查单」查看订单",
+    "guestPasswordHelp": "自己设置，至少 6 位；之后用邮箱和密码在「订单查询」查看订单",
     "useCoupon": "使用优惠码",
     "guestInfoPending": "待填写",
     "guestInfoDone": "已填写",
@@ -259,7 +279,7 @@
     "cart": "购物车",
     "login": "登录",
     "personalCenter": "个人中心",
-    "guestOrders": "游客查单",
+    "guestOrders": "订单查询",
     "logout": "退出",
     "selectLanguage": "选择语言",
     "more": "更多"
@@ -1163,7 +1183,7 @@
     "guestInstructions": {
       "title": "填写说明：",
       "email": "邮箱：请填写一个可接收邮件的邮箱，您在付款后我们可通过该邮箱向您发送商品信息并可通过该邮箱联系您",
-      "password": "订单密码：请自行设置一个复杂密码并妥善保管，该密码用于您在购买之后，通过“游客查单”菜单，查询您所购买的商品"
+      "password": "订单密码：请自行设置一个复杂密码并妥善保管，该密码用于您在购买之后，通过“订单查询”入口，查询您所购买的商品"
     },
     "manualFormTitle": "交付信息填写",
     "manualFormTip": "人工交付信息按商品收集：同一商品购买多个 SKU 时仅需填写一次。",

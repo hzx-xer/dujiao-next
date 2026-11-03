@@ -80,8 +80,26 @@
         <p class="text-muted-foreground">{{ recharge.remark }}</p>
       </section>
 
+      <!-- 支付区域：加密货币收款 -->
+      <LunaCryptoPayment
+        v-if="showCryptoPayment"
+        :amount="cryptoChainAmount"
+        :address="cryptoWalletAddress"
+        :token="cryptoTokenLabel"
+        :chain="cryptoChain"
+        :qr-content="qrDisplayContent"
+        :qr-image-url="qrImageUrl"
+        :expires-at-ms="cryptoExpiresAtMs"
+        :order-no="recharge.recharge_no"
+        :order-no-label="t('personalCenter.wallet.rechargeNoLabel')"
+        :order-amount-display="formatMoney(recharge.payable_amount, recharge.currency)"
+        :refreshing="checkingPayment"
+        :refresh-label="checkingPayment ? t('personalCenter.wallet.checkingPayStatus') : t('personalCenter.wallet.checkPayStatus')"
+        @refresh="checkPayment"
+      />
+
       <!-- 支付区域 -->
-      <section v-if="isPending" class="mb-[18px] luna-panel p-[22px]">
+      <section v-else-if="isPending" class="mb-[18px] luna-panel p-[22px]">
         <h2 class="mb-4 text-lg font-bold">{{ t('rechargeOrder.paymentTitle') }}</h2>
         <div class="mb-3.5 text-[13px] text-muted-foreground">{{ t('personalCenter.wallet.pendingHint') }}</div>
         <div class="grid grid-cols-1 gap-[18px] md:grid-cols-2">
@@ -122,19 +140,27 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle, CheckCircle2 } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import LunaCryptoPayment from './components/LunaCryptoPayment.vue'
 import { useRechargeOrderDetail } from '../../composables/useRechargeOrderDetail'
+import { hasCryptoPaymentTarget } from '../../utils/cryptoPaymentDisplay'
 
 const { t } = useI18n()
 
 const {
   loading, checkingPayment, recharge, payment, walletAddressCopied, qrImageUrl,
   isPending, payLink, showTelegramPayHint, qrUsingPayLinkFallback, showQRCode,
-  cryptoWalletAddress, cryptoPaymentDetails, hasCryptoPaymentDetails, customerFeeApplied,
+  cryptoWalletAddress, cryptoChainAmount, cryptoChain, cryptoTokenLabel, cryptoExpiresAtMs, qrDisplayContent,
+  cryptoPaymentDetails, hasCryptoPaymentDetails, customerFeeApplied,
   rechargeStatusText, rechargeStatusVariant, formatMoney, formatDate,
   loadDetail, checkPayment, handleOpenPayLink, handleCopyWalletAddress,
 } = useRechargeOrderDetail()
+
+const showCryptoPayment = computed(() => (
+  isPending.value && showQRCode.value && hasCryptoPaymentTarget(cryptoWalletAddress.value, cryptoChainAmount.value)
+))
 </script>

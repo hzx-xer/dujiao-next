@@ -30,6 +30,7 @@
         <MobileBottomNav v-if="!isResellerConsole" />
       </template>
     </template>
+    <div v-else class="app-boot-spinner" aria-hidden="true"></div>
 
     <Loading :loading="appStore.loading" />
     <Toast />
@@ -41,6 +42,7 @@
 import { computed, defineAsyncComponent, ref, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from './stores/app'
+import { finishBootScreen } from './utils/bootScreen'
 import { getActiveTemplate, hasTemplateHint, rememberTemplate, type StorefrontTemplate } from './templates/registry'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
@@ -73,6 +75,11 @@ if (!shellReady.value) {
   void useRouter().isReady().catch(() => {}).finally(() => { shellReady.value = true })
 }
 watch(() => appStore.config?.storefront_template, (value) => rememberTemplate(value), { immediate: true })
+
+// 模板外壳在自己挂载时撤掉启动背景；没有外壳的页面（classic / 分销控制台）在这里撤掉
+watch([shellReady, templateLayout, isResellerConsole], () => {
+  if (shellReady.value && (!templateLayout.value || isResellerConsole.value)) finishBootScreen()
+}, { immediate: true, flush: 'post' })
 </script>
 
 <style>

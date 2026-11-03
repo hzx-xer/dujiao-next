@@ -77,6 +77,26 @@
     }
   },
   "luna": {
+    "cartPendingHint": "{count} in cart, ready to check out",
+    "themeLight": "Light mode",
+    "themeDark": "Dark mode",
+    "copy": "Copy",
+    "copyAmount": "Copy amount",
+    "copyAddress": "Copy address",
+    "copyFailed": "Copy failed, please select and copy manually",
+    "cryptoWaiting": "Awaiting payment",
+    "cryptoSendAmount": "Send exactly",
+    "cryptoExactAmount": "Send this exact amount. Sending more or less may not be credited automatically",
+    "cryptoReceiveAddress": "Receiving address",
+    "cryptoAddressCheck": "Check the first and last characters before sending",
+    "cryptoScanHint": "Or scan with your wallet app",
+    "cryptoNetworkWarning": "Only {network} is supported. Funds sent on another network cannot be recovered",
+    "cryptoOrderAmount": "Order total {amount}",
+    "cryptoOrderDetails": "Price details",
+    "cryptoItemsSummary": "{title} and {count} items in total",
+    "cryptoExpiredTitle": "Payment window expired",
+    "cryptoExpiredHint": "This address is no longer valid, so do not send funds to it. If you already sent funds, contact support with your order number.",
+    "cryptoRetry": "Start a new payment",
     "chooseCategory": "Choose a category",
     "chooseProduct": "Choose a product",
     "subcategories": "Subcategories",
@@ -92,7 +112,7 @@
     "guestEmailLabel": "Email",
     "guestEmailHelp": "We'll send your order details here after payment",
     "guestPasswordLabel": "Order password",
-    "guestPasswordHelp": "Set your own (6+ characters); use it with your email under Guest Orders",
+    "guestPasswordHelp": "Set your own (6+ characters); use it with your email under Track Order",
     "useCoupon": "Have a coupon code?",
     "guestInfoPending": "Required",
     "guestInfoDone": "Done",
@@ -307,7 +327,7 @@
     "cart": "Cart",
     "login": "Login",
     "personalCenter": "Personal Center",
-    "guestOrders": "Guest Lookup",
+    "guestOrders": "Track Order",
     "logout": "Logout",
     "selectLanguage": "Select Language",
     "more": "More"
@@ -1211,7 +1231,7 @@
     "guestInstructions": {
       "title": "Fill Instructions:",
       "email": "Email: Please provide an email address that can receive emails. After payment, we could send product information and contact you through this email.",
-      "password": "Order Password: Please set a complex password and keep it safe. This password is used for you to query your purchased products through the \"Guest Order Lookup\" menu after purchase."
+      "password": "Order Password: Please set a complex password and keep it safe. This password is used for you to query your purchased products through the \"Track Order\" link after purchase."
     },
     "manualFormTitle": "Required information",
     "manualFormTip": "Manual-delivery information is collected per product. If multiple SKUs of the same product are purchased, fill it once only.",

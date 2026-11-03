@@ -115,9 +115,11 @@ type WalletRechargePaymentPayload struct {
 	ChainAmount     string              `json:"chain_amount,omitempty"`
 	Chain           string              `json:"chain,omitempty"`
 	TokenID         string              `json:"token_id,omitempty"`
-	ExpiresAt       *time.Time          `json:"expires_at,omitempty"`
-	Status          string              `json:"status,omitempty"`
-	FeePolicy       string              `json:"fee_policy,omitempty"`
+	// GatewayExpiresAt 是网关停止收款监听的时间，见 paymentpresenter.ExtractCryptoGatewayExpiresAt。
+	GatewayExpiresAt *time.Time `json:"gateway_expires_at,omitempty"`
+	ExpiresAt        *time.Time `json:"expires_at,omitempty"`
+	Status           string     `json:"status,omitempty"`
+	FeePolicy        string     `json:"fee_policy,omitempty"`
 }
 
 // NewWalletRechargePaymentPayload 构造钱包充值支付响应
@@ -152,6 +154,12 @@ func NewWalletRechargePaymentPayload(recharge *walletdomain.RechargeOrder, payme
 		p.ChainAmount = info.ChainAmount
 		p.Chain = info.Chain
 		p.TokenID = info.TokenID
+		p.GatewayExpiresAt = paymentpresenter.ExtractCryptoGatewayExpiresAt(
+			payment.ProviderType,
+			payment.InteractionMode,
+			payment.ProviderPayload,
+			payment.CreatedAt,
+		)
 	}
 	return p
 	// 排除 Payment 的：OrderID、ChannelID、Amount、FeeRate、FixedFee、FeeAmount、Currency、

@@ -317,6 +317,9 @@ func (h *CreateHandler) respondCreateAndPay(c *gin.Context, order *orderdomain.O
 				resp["token_id"] = info.TokenID
 			}
 		}
+		if gatewayExpiresAt := paymentpresenter.ExtractCryptoGatewayExpiresAt(result.Payment.ProviderType, result.Payment.InteractionMode, result.Payment.ProviderPayload, result.Payment.CreatedAt); gatewayExpiresAt != nil {
+			resp["gateway_expires_at"] = gatewayExpiresAt
+		}
 		resp["expires_at"] = result.Payment.ExpiredAt
 	}
 	response.Success(c, resp)

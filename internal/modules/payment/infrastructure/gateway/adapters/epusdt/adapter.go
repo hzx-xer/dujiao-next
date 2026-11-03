@@ -82,13 +82,59 @@ func (a *epusdtAdapter) CreatePayment(ctx context.Context, raw jsonmap.JSON, inp
 		return nil, mapEpusdtError(err)
 	}
 
+	mode, _ := input.Extra["interaction_mode"].(string)
+	redirectURL, qrCodeURL := resolveEpusdtPaymentTargets(result, mode)
+
 	return &paymentcontract.GatewayCreateResult{
 		ProviderRef:        result.TradeID,
-		RedirectURL:        result.PaymentURL,
-		QRCodeURL:          result.PaymentURL, // epusdt 是 USDT 网关，PaymentURL 同时用于跳转和 QR 展示
-		Payload:            jsonmap.JSON(result.Raw),
+		RedirectURL:        redirectURL,
+		QRCodeURL:          qrCodeURL,
+		Payload:            buildEpusdtCreatePayload(result, cfg),
 		DisplayChannelType: epusdtDisplayChannelType(cfg),
 	}, nil
+}
+
+// resolveEpusdtPaymentTargets 决定支付记录的跳转链接和二维码内容。
+// 二维码模式且网关返回了收款地址时，二维码内容用地址，钱包才能直接扫码转账；
+// 其余情况沿用收银页链接，它同时用于跳转和二维码展示。
+func resolveEpusdtPaymentTargets(result *epusdt.CreateResult, mode string) (redirectURL string, qrCodeURL string) {
+	if strings.EqualFold(strings.TrimSpace(mode), constants.PaymentInteractionQR) {
+		if address := readEpusdtReceiveAddress(result.Raw); address != "" {
+			return "", address
+		}
+	}
+	return result.PaymentURL, result.PaymentURL
+}
+
+func readEpusdtReceiveAddress(raw map[string]interface{}) string {
+	data, ok := raw["data"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	address, _ := data["receive_address"].(string)
+	return strings.TrimSpace(address)
+}
+
+// buildEpusdtCreatePayload 在网关原始响应上补充币种和网络，格式与 bepusdt 一致。
+// 网关响应不一定带这两项，交易模式下它们由通道配置决定；收银台模式由用户在收银页选择，不写入。
+func buildEpusdtCreatePayload(result *epusdt.CreateResult, cfg *epusdt.Config) jsonmap.JSON {
+	payload := jsonmap.JSON{}
+	for key, value := range result.Raw {
+		payload[key] = value
+	}
+	token := strings.ToLower(strings.TrimSpace(cfg.Token))
+	network := strings.ToLower(strings.TrimSpace(cfg.Network))
+	if cfg.OrderMode == constants.PaymentEpusdtOrderModeCashier || token == "" || network == "" {
+		return payload
+	}
+	data, ok := payload["data"].(map[string]interface{})
+	if !ok {
+		data = map[string]interface{}{}
+		payload["data"] = data
+	}
+	data["chain"] = network
+	data["token_id"] = network + "-" + token
+	return payload
 }
 
 // epusdtDisplayChannelType 返回 epusdt 支付记录的展示用渠道类型。

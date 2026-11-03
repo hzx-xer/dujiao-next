@@ -121,7 +121,8 @@ const btnClass = (active: boolean) =>
 const editor = useEditor({
     content: processHtmlForDisplay(props.modelValue),
     extensions: [
-        StarterKit,
+        // v3 的 StarterKit 自带链接、下划线和结尾空段落：前两个这里单独配置，空段落会改变保存的内容
+        StarterKit.configure({ link: false, underline: false, trailingNode: false }),
         Underline,
         Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline' } }),
         Image.configure({ HTMLAttributes: { class: 'max-w-full h-auto rounded-lg' }, allowBase64: false }),
@@ -146,7 +147,7 @@ watch(
         if (!editor.value) return
         const displayValue = processHtmlForDisplay(value || '')
         if (editor.value.getHTML() !== displayValue) {
-            editor.value.commands.setContent(displayValue, false)
+            editor.value.commands.setContent(displayValue, { emitUpdate: false })
         }
     },
 )

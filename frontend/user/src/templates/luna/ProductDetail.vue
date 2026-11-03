@@ -12,14 +12,19 @@
 
     <!-- Content -->
     <template v-else-if="product">
-      <!-- 面包屑：首页 › 所属分类 › 商品（商品名单行截断，完整标题在下面的 h1） -->
-      <nav class="flex min-w-0 items-center gap-1.5 py-4 pb-2 text-[13px] font-semibold text-muted-foreground sm:py-5 sm:pb-2 sm:text-[13.5px]">
-        <RouterLink to="/" class="flex-none hover:text-primary">{{ t('nav.home') }}</RouterLink>
-        <ChevronRight class="h-4 w-4 flex-none" />
-        <RouterLink :to="categoryPath" class="max-w-[40%] flex-none truncate hover:text-primary">{{ categoryName || t('nav.products') }}</RouterLink>
-        <ChevronRight class="h-4 w-4 flex-none" />
-        <span class="min-w-0 truncate text-foreground">{{ getLocalizedText(product.title) }}</span>
-      </nav>
+      <!-- 返回入口放在首屏最显眼的位置。面包屑：首页 › 所属分类 › 商品（窄屏放不下，只留返回按钮） -->
+      <div class="flex min-w-0 items-center gap-4 py-3 sm:py-4">
+        <Button as-child variant="outline" class="h-11 flex-none rounded-full border-primary/40 bg-card px-4 font-bold text-primary hover:bg-primary/10 hover:text-primary sm:h-10" data-testid="back-to-products">
+          <RouterLink :to="backToListTo"><ArrowLeft /> {{ t('productDetail.backToProducts') }}</RouterLink>
+        </Button>
+        <nav class="hidden min-w-0 items-center gap-1.5 text-[13.5px] font-semibold text-muted-foreground sm:flex">
+          <RouterLink to="/" class="flex-none hover:text-primary">{{ t('nav.home') }}</RouterLink>
+          <ChevronRight class="h-4 w-4 flex-none" />
+          <RouterLink :to="categoryPath" class="max-w-[40%] flex-none truncate hover:text-primary">{{ categoryName || t('nav.products') }}</RouterLink>
+          <ChevronRight class="h-4 w-4 flex-none" />
+          <span class="min-w-0 truncate text-foreground">{{ getLocalizedText(product.title) }}</span>
+        </nav>
+      </div>
 
       <!-- 宽屏购买按钮统一在右栏：有图 = 左图 / 右标题+购买，详情在下方；无图 = 左标题+详情 / 右吸顶购买卡 -->
       <section class="luna-panel grid grid-cols-1 gap-y-4 p-4 sm:gap-y-5 sm:p-6 lg:gap-x-9" :class="sectionGridClass">
@@ -258,7 +263,7 @@
       </section>
 
       <div class="py-6 text-center">
-        <Button as-child variant="ghost" size="sm" class="rounded-full"><RouterLink :to="backToListTo"><ArrowLeft /> {{ t('productDetail.backToProducts') }}</RouterLink></Button>
+        <Button as-child variant="outline" class="h-11 rounded-full px-5 font-bold sm:h-10"><RouterLink :to="backToListTo"><ArrowLeft /> {{ t('productDetail.backToProducts') }}</RouterLink></Button>
       </div>
 
       <!-- 移动端固定购买条 -->

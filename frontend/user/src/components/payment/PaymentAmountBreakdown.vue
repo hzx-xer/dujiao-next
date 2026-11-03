@@ -1,8 +1,10 @@
 <template>
-  <div class="bg-secondary border rounded-2xl p-4">
-    <div class="text-xs uppercase tracking-wider text-muted-foreground">{{ t('payment.payableAmountLabel') }}</div>
-    <div class="mt-1 text-2xl font-bold text-foreground">{{ payableAmountDisplay }}</div>
-    <div class="mt-4 space-y-2 text-xs">
+  <div :class="compact ? '' : 'bg-secondary border rounded-2xl p-4'">
+    <template v-if="!compact">
+      <div class="text-xs uppercase tracking-wider text-muted-foreground">{{ t('payment.payableAmountLabel') }}</div>
+      <div class="mt-1 text-2xl font-bold text-foreground">{{ payableAmountDisplay }}</div>
+    </template>
+    <div class="space-y-2 text-xs" :class="{ 'mt-4': !compact }">
       <div class="flex items-center justify-between gap-4">
         <span class="text-muted-foreground">{{ t('orderDetail.amountTotal') }}</span>
         <span class="font-semibold text-foreground">{{ formatMoney(order.total_amount, order.currency) }}</span>
@@ -63,6 +65,8 @@ defineProps<{
   formatMoney: (amount?: string, currency?: string) => string
   formatDiscountMoney: (amount?: string, currency?: string) => string
   hasDiscountAmount: (amount?: string) => boolean
+  /** 只显示明细行：不带卡片样式和应付金额大字，用于加密货币付款页的可展开明细 */
+  compact?: boolean
 }>()
 
 const { t } = useI18n()

@@ -792,13 +792,9 @@ export function useCheckout() {
     await loadPreview()
   }
 
-  const clearSourceStore = () => {
-    if (isBuyNowMode.value) {
-      buyNowStore.clear()
-    } else {
-      cartStore.clear()
-    }
-  }
+  // 订单建好后要等离开结算页才清空来源：页面淡出期间仍在渲染，提前清空会闪一下「购物车为空」。
+  // 来源必须在提交时确定：离开时路由已经是支付页，isBuyNowMode 不再可靠，会清错购物车。
+  let clearSourceOnLeave: (() => void) | null = null
 
   const handleSubmit = async () => {
     submitAttempted.value = true
@@ -847,8 +843,6 @@ export function useCheckout() {
         throw new Error(t('checkout.errors.submitFailed'))
       }
 
-      clearSourceStore()
-
       // Redirect to the existing Payment page which handles all payment display
       let query = userAuthStore.isAuthenticated
         ? `order_no=${encodeURIComponent(responseData.order_no)}`
@@ -858,7 +852,14 @@ export function useCheckout() {
       if (responseData.payment_error && payload.channel_id) {
         query += `&pay_failed=${encodeURIComponent(String(payload.channel_id))}`
       }
-      router.push(`/pay?${query}`)
+      const clearSource = isBuyNowMode.value ? buyNowStore.clear : cartStore.clear
+      clearSourceOnLeave = clearSource
+      const navigationFailure = await router.push(`/pay?${query}`).catch(() => true)
+      if (navigationFailure) {
+        // 没能离开结算页时也要清空，否则用户可能把同一批商品再下一单
+        clearSourceOnLeave = null
+        clearSource()
+      }
     } catch (err: any) {
       error.value = err.message || t('checkout.errors.submitFailed')
       if (guestCaptchaEnabled.value && captchaProvider.value === 'image') {
@@ -869,7 +870,8 @@ export function useCheckout() {
         guestTurnstileToken.value = ''
       }
     } finally {
-      submitting.value = false
+      // 订单已建好时保持提交中，防止页面淡出期间再次点击重复下单
+      if (!clearSourceOnLeave) submitting.value = false
     }
   }
 
@@ -934,6 +936,7 @@ export function useCheckout() {
   })
 
   onUnmounted(() => {
+    clearSourceOnLeave?.()
     debouncedLoadPreview.cancel()
     debouncedLoadOrderPaymentChannels.cancel()
   })

@@ -76,7 +76,8 @@ const presetColors = [
 const editor = useEditor({
   content: processHtmlForDisplay(props.modelValue),
   extensions: [
-    StarterKit,
+    // v3 的 StarterKit 自带链接、下划线和结尾空段落：链接用下面单独配置的，下划线这个编辑器本来就没有，空段落会改变保存的内容
+    StarterKit.configure({ link: false, underline: false, trailingNode: false }),
     TextStyle,
     Color,
     Image.extend({
@@ -142,7 +143,7 @@ watch(
       const isSame = editor.value?.getHTML() === displayValue
 
       if (!isSame && editor.value) {
-        editor.value.commands.setContent(displayValue)
+        editor.value.commands.setContent(displayValue, { emitUpdate: false })
       }
     }
   }
@@ -152,7 +153,7 @@ const toggleSourceMode = () => {
   if (isSourceMode.value) {
     if (editor.value) {
       const displayValue = processHtmlForDisplay(sourceContent.value)
-      editor.value.commands.setContent(displayValue)
+      editor.value.commands.setContent(displayValue, { emitUpdate: false })
       emit('update:modelValue', sourceContent.value)
     }
   } else {

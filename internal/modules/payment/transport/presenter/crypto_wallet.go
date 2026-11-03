@@ -2,7 +2,10 @@ package presenter
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dujiao-next/internal/constants"
 	"github.com/dujiao-next/internal/shared/jsonmap"
@@ -47,6 +50,8 @@ func ExtractCryptoWalletInfo(providerType, interactionMode string, payload jsonm
 		return CryptoWalletInfo{
 			Address:     readPayloadString(payload, "data", "receive_address"),
 			ChainAmount: readPayloadString(payload, "data", "actual_amount"),
+			Chain:       readPayloadString(payload, "data", "chain"),
+			TokenID:     readPayloadString(payload, "data", "token_id"),
 		}
 	case constants.PaymentProviderDujiaoPay:
 		return CryptoWalletInfo{
@@ -70,6 +75,49 @@ func ExtractCryptoWalletInfo(providerType, interactionMode string, payload jsonm
 	default:
 		return CryptoWalletInfo{}
 	}
+}
+
+// ExtractCryptoGatewayExpiresAt 返回网关停止收款监听的时间，取不到时返回 nil。
+//
+// 网关有独立于订单的收款时限（BEpusdt 未传 timeout 时默认 20 分钟），比订单更早到期时，
+// 用户按订单倒计时转账可能无法自动到账，所以付款页要按较早的时间显示。
+// data.expiration_time 在 BEpusdt 里是创建时的剩余秒数，也兼容绝对时间戳（秒或毫秒）。
+// 这个值只用于展示，不参与支付状态判断。网关响应不可信，异常值一律视为取不到，
+// 否则超出 JSON 时间范围的结果会让整个付款接口序列化失败。
+func ExtractCryptoGatewayExpiresAt(providerType, interactionMode string, payload jsonmap.JSON, createdAt time.Time) *time.Time {
+	if strings.ToLower(strings.TrimSpace(interactionMode)) != constants.PaymentInteractionQR {
+		return nil
+	}
+	switch strings.ToLower(strings.TrimSpace(providerType)) {
+	case constants.PaymentProviderBepusdt, constants.PaymentProviderEpusdt:
+	default:
+		return nil
+	}
+	const (
+		unixSecondsFloor = 1_000_000_000
+		unixMillisFloor  = 1_000_000_000_000
+		unixMillisCap    = 1_000_000_000_000_000 // 超过这个值无论按哪种单位都没有意义
+		maxJSONTimeYear  = 9999                  // time.Time 序列化为 JSON 的年份上限
+	)
+	value, err := strconv.ParseFloat(readPayloadString(payload, "data", "expiration_time"), 64)
+	if err != nil || math.IsNaN(value) || value <= 0 || value >= unixMillisCap {
+		return nil
+	}
+	var expiresAt time.Time
+	switch {
+	case value >= unixMillisFloor:
+		expiresAt = time.UnixMilli(int64(value))
+	case value >= unixSecondsFloor:
+		expiresAt = time.Unix(int64(value), 0)
+	case createdAt.IsZero():
+		return nil
+	default:
+		expiresAt = createdAt.Add(time.Duration(value) * time.Second)
+	}
+	if expiresAt.Year() > maxJSONTimeYear {
+		return nil
+	}
+	return &expiresAt
 }
 
 func firstPayloadString(values ...string) string {

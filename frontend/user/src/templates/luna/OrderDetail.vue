@@ -8,9 +8,14 @@
       <span class="font-semibold text-foreground">{{ t('orderDetail.title') }}</span>
     </nav>
 
-    <header class="mb-[18px]">
-      <h1 class="mb-1.5 text-3xl font-extrabold">{{ t('orderDetail.title') }}</h1>
-      <p class="text-muted-foreground">{{ t('orderDetail.subtitle') }}</p>
+    <header class="mb-[18px] flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="mb-1.5 text-3xl font-extrabold">{{ t('orderDetail.title') }}</h1>
+        <p class="text-muted-foreground">{{ t('orderDetail.subtitle') }}</p>
+      </div>
+      <Button as-child variant="outline" class="h-11 flex-none rounded-full border-primary/40 bg-card px-4 font-bold text-primary hover:bg-primary/10 hover:text-primary sm:h-10" data-testid="continue-shopping">
+        <RouterLink to="/products"><ShoppingBag /> {{ t('orders.continueShopping') }}</RouterLink>
+      </Button>
     </header>
 
     <!-- Loading -->
@@ -58,7 +63,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, ShoppingBag } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import LunaOrderBody from './components/LunaOrderBody.vue'

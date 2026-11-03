@@ -3,12 +3,13 @@
     <div class="mb-4 mt-5 flex items-start justify-between gap-4 sm:mb-5 sm:mt-7">
       <div>
         <h1 class="text-2xl font-extrabold sm:text-[30px]">{{ t('payment.title') }}</h1>
-        <p class="mt-1 text-sm text-muted-foreground">{{ t('payment.subtitle') }}</p>
+        <p class="mt-1 text-sm text-muted-foreground" :class="{ 'max-sm:hidden': showCryptoPayment }">{{ t('payment.subtitle') }}</p>
       </div>
       <RouterLink :to="backLink" class="text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary">{{ t('payment.backToOrders') }}</RouterLink>
     </div>
 
-    <LunaCheckoutSteps current="payment" />
+    <!-- 手机上把首屏留给转账数量和地址 -->
+    <LunaCheckoutSteps current="payment" :class="{ 'max-sm:hidden': showCryptoPayment }" />
 
     <!-- Loading -->
     <div v-if="loading" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
@@ -34,6 +35,53 @@
       <p>{{ t('payment.orderNotFound') }}</p>
       <Button as-child class="mt-2 rounded-full" size="sm"><RouterLink :to="backLink">{{ t('payment.backToOrders') }}</RouterLink></Button>
     </div>
+
+    <!-- 支付完成：跳转订单详情前的过渡 -->
+    <div v-else-if="paymentCompleted" class="mb-[18px] flex flex-col items-center gap-3 luna-panel px-4 py-14 text-center" role="status" data-testid="payment-completed">
+      <CheckCircle2 class="h-12 w-12 text-success" />
+      <p class="text-lg font-bold text-foreground">{{ t('payment.redirecting') }}</p>
+      <Button as-child variant="outline" size="sm" class="mt-1 rounded-full"><RouterLink :to="backLink">{{ t('payment.backToOrders') }}</RouterLink></Button>
+    </div>
+
+    <!-- 结果视图：加密货币收款 -->
+    <LunaCryptoPayment
+      v-else-if="showCryptoPayment"
+      :amount="cryptoChainAmount"
+      :address="cryptoWalletAddress"
+      :token="cryptoTokenLabel"
+      :chain="cryptoChain"
+      :channel-name="resultChannelName"
+      :qr-content="qrDisplayContent"
+      :qr-image-url="qrImageUrl"
+      :expires-at-ms="expiresAtMs"
+      :order-no="order.order_no"
+      :order-no-label="t('payment.orderNo')"
+      :order-amount-display="payableAmountDisplay"
+      :summary="cryptoOrderSummary"
+      :polling="pollingActive"
+      :refreshing="loading"
+      :refresh-label="t('payment.refreshStatus')"
+      can-change-method
+      @refresh="handleRefresh"
+      @change-method="handleChangePaymentMethod"
+    >
+      <PaymentAmountBreakdown
+        compact
+        :order="order"
+        :payment-result="paymentResult"
+        :customer-fee-applied="customerFeeApplied"
+        :customer-fee-amount-display="customerFeeAmountDisplay"
+        :payable-amount-display="payableAmountDisplay"
+        :wallet-paid-display="paymentWalletPaidDisplay"
+        :online-pay-display="paymentOnlinePayDisplay"
+        :show-countdown="false"
+        :countdown-text="countdownText"
+        :polling-active="false"
+        :format-money="formatMoney"
+        :format-discount-money="formatDiscountMoney"
+        :has-discount-amount="hasDiscountAmount"
+      />
+    </LunaCryptoPayment>
 
     <!-- 结果视图 -->
     <div v-else-if="showResultView" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
@@ -260,13 +308,15 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle } from 'lucide-vue-next'
+import { AlertCircle, CheckCircle2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PaymentAmountBreakdown from '../../components/payment/PaymentAmountBreakdown.vue'
 import LunaCheckoutSteps from './components/LunaCheckoutSteps.vue'
+import LunaCryptoPayment from './components/LunaCryptoPayment.vue'
 import LunaPaymentChannels from './components/LunaPaymentChannels.vue'
 import { usePayment } from '../../composables/usePayment'
+import { hasCryptoPaymentTarget } from '../../utils/cryptoPaymentDisplay'
 
 const { t } = useI18n()
 
@@ -276,8 +326,9 @@ const {
   backLink, showGuestAuthForm, walletOnlyPayment, showBalanceOption, configReady, channels,
   selectedChannel, selectedChannelName, cachedChannelName, resultChannelName, interactionLabel,
   paymentResultTitle, paymentGuideTitle, paymentGuideTip, showPayLink, showTelegramPayHint, payLinkOpenedTip,
-  cryptoWalletAddress, cryptoPaymentDetails, hasCryptoPaymentDetails, qrUsingPayLinkFallback, showQRCode, qrImageUrl,
-  orderExpired, orderCanceled, paymentAlert, countdownExpired, countdownText, showCountdown, showResultView, pollingActive, orderItems,
+  cryptoWalletAddress, cryptoChainAmount, cryptoChain, cryptoTokenLabel, qrDisplayContent, expiresAtMs,
+  cryptoPaymentDetails, hasCryptoPaymentDetails, qrUsingPayLinkFallback, showQRCode, qrImageUrl,
+  orderExpired, orderCanceled, paymentAlert, countdownExpired, countdownText, showCountdown, showResultView, paymentCompleted, pollingActive, orderItems,
   customerFeeApplied, customerFeeAmountDisplay, payableAmountDisplay, walletBalanceDisplay,
   expectedWalletPaidDisplay, expectedOnlinePayDisplay, expectedOnlinePayCents, requiresOnlineChannel,
   paymentWalletPaidDisplay, paymentOnlinePayDisplay, isChannelDisabledForAmount, channelAmountLimitHint, canSubmitPayment,
@@ -287,6 +338,18 @@ const {
 } = usePayment()
 
 const route = useRoute()
+
+const showCryptoPayment = computed(() => (
+  showResultView.value && showQRCode.value && hasCryptoPaymentTarget(cryptoWalletAddress.value, cryptoChainAmount.value)
+))
+
+/** 付款页上的商品摘要：只列第一件，其余合并成件数 */
+const cryptoOrderSummary = computed(() => {
+  const items = orderItems.value as any[]
+  if (!items.length) return ''
+  const first = `${getLocalizedText(items[0].title)} × ${items[0].quantity}`
+  return items.length > 1 ? t('luna.cryptoItemsSummary', { title: first, count: items.length }) : first
+})
 
 /** 结算页带过来的「发起失败的渠道」id（见 useCheckout 的 pay_failed） */
 const failedChannelId = computed(() => Number(route.query.pay_failed) || 0)

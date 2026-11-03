@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
+import { compressImageForUpload } from '@/utils/imageCompress'
 import type { AdminMedia } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -150,7 +151,7 @@ async function handleFileChange(files: FileList | null) {
     const batch = fileList.slice(i, i + 3)
     await Promise.allSettled(batch.map(async (file) => {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', await compressImageForUpload(file))
       try {
         await adminAPI.upload(formData, 'common')
       } catch {

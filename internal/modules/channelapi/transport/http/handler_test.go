@@ -13,6 +13,7 @@ import (
 	orderdomain "github.com/dujiao-next/internal/modules/order/domain"
 
 	"github.com/dujiao-next/internal/constants"
+	productdomain "github.com/dujiao-next/internal/modules/catalog/product/domain"
 	userauthapp "github.com/dujiao-next/internal/modules/identity/userauth/application"
 	"github.com/dujiao-next/internal/shared/jsonmap"
 	"github.com/dujiao-next/internal/shared/money"
@@ -20,6 +21,7 @@ import (
 	"github.com/shopspring/decimal"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 )
 
@@ -644,5 +646,62 @@ func TestGetPaymentChannelsFiltersByUserEligibility(t *testing.T) {
 		if len(payload.Data.Items) != 1 || payload.Data.Items[0].ID != 1 {
 			t.Fatalf("%s: expected only eligible channel 1, got %+v", query, payload.Data.Items)
 		}
+	}
+}
+
+type searchProductsStub struct {
+	calls []string
+}
+
+func (s *searchProductsStub) ListPublicExact(categoryID string, _, _ int) ([]productdomain.Product, int64, error) {
+	s.calls = append(s.calls, "exact:"+categoryID)
+	return nil, 0, nil
+}
+
+func (s *searchProductsStub) ListPublic(categoryID, search string, _, _ int) ([]productdomain.Product, int64, error) {
+	s.calls = append(s.calls, "public:"+categoryID+":"+search)
+	return nil, 0, nil
+}
+
+func (s *searchProductsStub) ApplyAutoStockCounts([]productdomain.Product) error { return nil }
+
+type searchSettingsStub struct{}
+
+func (searchSettingsStub) GetSiteCurrency(defaultValue string) (string, error) {
+	return defaultValue, nil
+}
+func (searchSettingsStub) GetWalletOnlyPayment() bool { return false }
+
+// 渠道商品列表支持 search：和网站搜索一样走 ListPublic；带 search 时 exact 不起作用；过长的关键词截断。
+func TestGetProductsPassesSearch(t *testing.T) {
+	products := &searchProductsStub{}
+	handler := &Handler{Dependencies: Dependencies{ProductService: products, SettingService: searchSettingsStub{}}}
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/catalog/products", handler.GetProducts)
+
+	long := strings.Repeat("卡", 80)
+	for _, query := range []string{
+		"search=" + url.QueryEscape(" 月卡 "),
+		"category_id=3&exact=1&search=vip",
+		"category_id=3&exact=1",
+		"search=" + url.QueryEscape(long),
+		"search=" + url.QueryEscape("   "),
+	} {
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/catalog/products?"+query, nil))
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s: expected 200, got %d body=%s", query, recorder.Code, recorder.Body.String())
+		}
+	}
+	want := []string{
+		"public::月卡",
+		"public:3:vip",
+		"exact:3",
+		"public::" + strings.Repeat("卡", channelSearchMaxRunes),
+		"public::",
+	}
+	if strings.Join(products.calls, "|") != strings.Join(want, "|") {
+		t.Fatalf("calls:\n got %v\nwant %v", products.calls, want)
 	}
 }

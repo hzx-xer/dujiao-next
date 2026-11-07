@@ -121,18 +121,28 @@ func normalizeChannelWholesalePrices(tiers productdomain.WholesalePriceTiers) []
 	return items
 }
 
-// GetProducts GET /api/v1/channel/catalog/products?locale=zh-CN&category_id=1&page=1&page_size=5
+// channelSearchMaxRunes 是渠道商品搜索关键词的最大长度，太长的截断，避免很长的 LIKE 条件。
+const channelSearchMaxRunes = 50
+
+// GetProducts GET /api/v1/channel/catalog/products?locale=zh-CN&category_id=1&page=1&page_size=5&search=关键词
+// search 和网站的商品搜索一样：匹配各语言的标题和描述、slug、SKU 编码和商品 ID；带 search 时 exact 不起作用。
 func (h *Handler) GetProducts(c *gin.Context) {
 	locale := c.DefaultQuery("locale", "zh-CN")
 	defaultLocale := "zh-CN"
 	categoryID := c.DefaultQuery("category_id", "")
 	page, pageSize := ginutil.ParsePaginationWithBounds(c, "page", "page_size", 5, 20)
 	exact := c.DefaultQuery("exact", "") == "1"
+	search := strings.TrimSpace(c.Query("search"))
+	if r := []rune(search); len(r) > channelSearchMaxRunes {
+		search = strings.TrimSpace(string(r[:channelSearchMaxRunes]))
+	}
 
 	var products []productdomain.Product
 	var total int64
 	var err error
-	if exact {
+	if search != "" {
+		products, total, err = h.ProductService.ListPublic(categoryID, search, page, pageSize)
+	} else if exact {
 		products, total, err = h.ProductService.ListPublicExact(categoryID, page, pageSize)
 	} else {
 		products, total, err = h.ProductService.ListPublic(categoryID, "", page, pageSize)

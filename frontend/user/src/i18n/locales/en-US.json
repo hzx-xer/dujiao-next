@@ -1698,6 +1698,7 @@
     "cancelFailed": "Cancel failed, please try again",
     "createdAtLabel": "Order time",
     "amountTitle": "Amount details",
+    "summaryTitle": "Amount & time",
     "amountOriginal": "Original amount",
     "amountDiscount": "Coupon amount",
     "amountTotal": "Total amount",
@@ -1740,6 +1741,8 @@
     "fulfillmentType": "Type",
     "fulfillmentStatus": "Status",
     "instructionsTitle": "Usage instructions",
+    "instructionsMustRead": "Must read",
+    "instructionsReadFirst": "Read this before using the delivery content",
     "fulfillmentTypes": {
       "manual": "Manual",
       "auto": "Auto"
@@ -1749,9 +1752,15 @@
       "delivered": "Delivered"
     },
     "fulfillmentCopy": "Copy",
+    "fulfillmentCopyAll": "Copy all",
     "fulfillmentCopied": "Copied",
+    "fulfillmentContentTitle": "Delivery content",
+    "fulfillmentLineCopy": "Copy",
+    "fulfillmentPendingHint": "Delivery content will appear here once the order is delivered",
+    "fulfillmentSaveNotice": "Copy and save it now. To protect your privacy, delivery content is cleared after a while. Never share it.",
     "fulfillmentDownload": "Download",
     "fulfillmentTotalLines": "{count} items in total",
+    "fulfillmentSecretCount": "{count} items",
     "fulfillmentDownloading": "Downloading...",
     "fulfillmentTruncatedHint": "Showing first 100 items only. Please download for full content."
   },

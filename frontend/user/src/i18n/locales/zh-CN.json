@@ -1650,6 +1650,7 @@
     "cancelFailed": "取消失败，请稍后重试",
     "createdAtLabel": "下单时间",
     "amountTitle": "金额明细",
+    "summaryTitle": "金额与时间",
     "amountOriginal": "原始金额",
     "amountDiscount": "礼券金额",
     "amountTotal": "实付金额",
@@ -1692,6 +1693,8 @@
     "fulfillmentType": "类型",
     "fulfillmentStatus": "状态",
     "instructionsTitle": "使用说明",
+    "instructionsMustRead": "必看",
+    "instructionsReadFirst": "请先阅读，再使用交付内容",
     "fulfillmentTypes": {
       "manual": "人工交付",
       "auto": "自动交付"
@@ -1701,9 +1704,15 @@
       "delivered": "已交付"
     },
     "fulfillmentCopy": "复制内容",
+    "fulfillmentCopyAll": "复制全部",
     "fulfillmentCopied": "已复制",
+    "fulfillmentContentTitle": "交付内容",
+    "fulfillmentLineCopy": "复制",
+    "fulfillmentPendingHint": "商品交付后，交付内容会显示在这里",
+    "fulfillmentSaveNotice": "请尽快复制并妥善保存。为保护隐私，交付内容会在一段时间后清除，请勿泄露给他人。",
     "fulfillmentDownload": "下载交付内容",
     "fulfillmentTotalLines": "共 {count} 条交付内容",
+    "fulfillmentSecretCount": "共 {count} 份",
     "fulfillmentDownloading": "下载中...",
     "fulfillmentTruncatedHint": "当前仅显示前 100 条预览，请下载获取完整交付内容"
   },

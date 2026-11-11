@@ -1,20 +1,21 @@
 <template>
-  <div class="mx-auto w-full max-w-[1100px] px-6 pb-8">
-    <div class="my-5 flex flex-wrap items-start justify-between gap-3">
+  <div class="mx-auto w-full max-w-[1100px] px-4 pb-8 sm:px-6">
+    <!-- 页头：手机上压成一行，把首屏留给卡密和使用说明 -->
+    <div class="my-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 sm:my-5 sm:items-start">
       <div class="min-w-0">
-        <h1 class="mb-1.5 text-3xl font-extrabold">{{ t('guestOrderDetail.title') }}</h1>
-        <p class="text-muted-foreground">{{ t('guestOrderDetail.subtitle') }}</p>
+        <h1 class="text-xl font-extrabold sm:mb-1.5 sm:text-3xl">{{ t('guestOrderDetail.title') }}</h1>
+        <p class="hidden text-muted-foreground sm:block">{{ t('guestOrderDetail.subtitle') }}</p>
       </div>
       <div class="flex min-w-0 max-w-full flex-wrap items-center gap-3">
         <RouterLink class="text-[13px] font-semibold text-muted-foreground transition-colors hover:text-primary" to="/guest/orders">{{ t('guestOrderDetail.backSearch') }}</RouterLink>
-        <Button as-child variant="outline" class="h-11 flex-none rounded-full border-primary/40 bg-card px-4 font-bold text-primary hover:bg-primary/10 hover:text-primary sm:h-10" data-testid="continue-shopping">
+        <Button as-child variant="outline" class="h-9 flex-none rounded-full border-primary/40 bg-card px-3.5 font-bold text-primary hover:bg-primary/10 hover:text-primary sm:h-10 sm:px-4" data-testid="continue-shopping">
           <RouterLink to="/products"><ShoppingBag /> {{ t('orders.continueShopping') }}</RouterLink>
         </Button>
       </div>
     </div>
 
     <!-- 游客验证 -->
-    <div v-if="viewState === 'auth'" class="mb-[18px] luna-panel p-[22px]">
+    <div v-if="viewState === 'auth'" class="mb-[18px] luna-panel p-4 sm:p-[22px]">
       <h2 class="mb-1.5 text-lg font-bold">{{ t('guestOrderDetail.authTitle') }}</h2>
       <p class="mb-3.5 text-[13px] text-muted-foreground">{{ t('guestOrderDetail.authHint') }}</p>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -29,7 +30,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="viewState === 'loading'" class="luna-panel p-[22px]">
+    <div v-if="viewState === 'loading'" class="luna-panel p-4 sm:p-[22px]">
       <div class="mb-4 h-5 w-[35%] rounded bg-secondary"></div>
       <div class="h-[200px] rounded-md bg-secondary"></div>
     </div>
@@ -41,19 +42,18 @@
     </div>
 
     <template v-else-if="viewState === 'detail' && order">
-      <div class="mb-[18px] flex flex-wrap items-start justify-between gap-[18px] luna-panel p-[22px]">
-        <div>
-          <div class="text-[11px] uppercase tracking-[0.06em] text-muted-foreground">{{ t('orders.orderNo') }}</div>
-          <div class="mt-1 font-bold">{{ order.order_no }}</div>
-          <div class="mt-1.5 text-[13px] text-muted-foreground">{{ t('orderDetail.createdAtLabel') }}：{{ formatDate(order.created_at) }}</div>
+      <!-- 订单概要：一张小条，订单号 + 状态、金额 + 下单时间，不和卡密抢位置 -->
+      <div class="mb-3 luna-panel px-4 py-3 sm:mb-4 sm:px-5 sm:py-3.5">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0 text-[13px] sm:text-sm">
+            <span class="text-muted-foreground">{{ t('orders.orderNo') }}：</span><span class="font-bold [overflow-wrap:anywhere]">{{ order.order_no }}</span>
+          </div>
+          <Badge :variant="statusVariant(order.status)" class="flex-none rounded-full">{{ statusLabel(order.status) }}</Badge>
         </div>
-        <div>
-          <div class="text-[11px] uppercase tracking-[0.06em] text-muted-foreground">{{ t('orderDetail.amountTotal') }}</div>
-          <div class="mt-1 text-2xl font-extrabold tabular-nums">{{ formatMoney(order.total_amount, order.currency) }}</div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2.5">
-          <Badge :variant="statusVariant(order.status)" class="rounded-full">{{ statusLabel(order.status) }}</Badge>
-          <Button v-if="order.status === 'pending_payment'" as-child size="sm" class="rounded-full">
+        <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-muted-foreground">
+          <span>{{ t('orderDetail.amountTotal') }}：<span class="font-bold tabular-nums text-foreground">{{ formatMoney(order.total_amount, order.currency) }}</span></span>
+          <span class="tabular-nums">{{ t('orderDetail.createdAtLabel') }}：{{ formatDate(order.created_at) }}</span>
+          <Button v-if="order.status === 'pending_payment'" as-child size="sm" class="ml-auto rounded-full">
             <RouterLink :to="`/pay?guest=1&order_no=${order.order_no}`">{{ t('orders.payNow') }}</RouterLink>
           </Button>
         </div>

@@ -170,6 +170,36 @@ body.luna-tokens {
   box-shadow: var(--luna-glow);
 }
 
+/* 站长富文本（交付后的使用说明）：typography 插件默认是中性灰，浅色下列表符号几乎看不见、暗色要靠 prose-invert。
+   这里直接用 luna 令牌，两种主题自动跟随；序号和圆点用强调色，便于按步骤阅读。
+   不放进 @layer：要压过 .prose 自带的变量（它在 utilities 层）。 */
+.luna-prose {
+  --tw-prose-body: var(--luna-ink);
+  --tw-prose-headings: var(--luna-ink);
+  --tw-prose-lead: var(--luna-ink-2);
+  --tw-prose-bold: var(--luna-ink);
+  --tw-prose-links: var(--luna-accent);
+  --tw-prose-counters: var(--luna-accent);
+  --tw-prose-bullets: var(--luna-accent);
+  --tw-prose-hr: var(--luna-border-strong);
+  --tw-prose-quotes: var(--luna-ink-2);
+  --tw-prose-quote-borders: var(--luna-border-strong);
+  --tw-prose-captions: var(--luna-ink-3);
+  --tw-prose-code: var(--luna-ink);
+  --tw-prose-th-borders: var(--luna-border-strong);
+  --tw-prose-td-borders: var(--luna-border);
+}
+
+/* 卡密 / 交付内容：英文数字用等宽字体，便于核对；中文不落到 monospace 兜底的宋体，改用系统黑体，避免字距发散 */
+.luna-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+
+.luna-prose :where(ol > li)::marker {
+  font-weight: 700;
+}
+
 @layer components {
   /* 主体白色面板 */
   .luna-panel {

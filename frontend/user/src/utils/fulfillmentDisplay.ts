@@ -64,10 +64,15 @@ const MAX_HEADING_LENGTH = 40
  * 站长写的使用说明常以「<h2>使用说明</h2>」开头，和区块自带的标题重复。
  * 开头是 h1–h4 时把它的纯文本提出来作为区块标题，正文里去掉这一段；否则原样返回、heading 为空。
  * 传入的 html 应已经过净化。
+ *
+ * 安全：这里是在净化之后按正则切字符串，切出来的 body 会直接进 v-html。
+ * 标题段里只要出现属性（= 或引号）就不拆：部分浏览器序列化属性值时不转义 < >，
+ * 属性里藏一段「</h2><img onerror=…>」会让正则切到属性中间，把后半段未净化的标签放出来。
+ * 不带属性时，文本里的 < > 一定被转义成实体，匹配到的 </hN> 只可能是真正的闭合标签。
  */
 export const splitLeadingHeading = (html: string): { heading: string; body: string } => {
   const match = /^\s*<h([1-4])(?:\s[^>]*)?>([\s\S]*?)<\/h\1\s*>/i.exec(html)
-  if (!match) return { heading: '', body: html }
+  if (!match || /[="']/.test(match[0])) return { heading: '', body: html }
   const heading = decodeEntities((match[2] ?? '').replace(/<[^>]*>/g, ''))
     .replace(/\s+/g, ' ')
     .trim()

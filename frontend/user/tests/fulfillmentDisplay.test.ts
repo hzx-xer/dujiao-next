@@ -38,10 +38,18 @@ test('leading heading of instructions becomes the block title', () => {
     heading: '使用说明',
     body: '<ol><li>登录</li></ol>',
   })
-  assert.deepEqual(splitLeadingHeading('\n<h3 class="x"><b>How</b> to&nbsp;use &amp; tips</h3>\n<p>a</p>'), {
+  assert.deepEqual(splitLeadingHeading('\n<h3><b>How</b> to&nbsp;use &amp; tips</h3>\n<p>a</p>'), {
     heading: 'How to use & tips',
     body: '<p>a</p>',
   })
+})
+
+test('heading with attributes is never split, so a forged closing tag in an attribute cannot leak markup', () => {
+  // 旧浏览器序列化属性值时不转义 < >：正则若切到属性中间，后半段 <img onerror> 会绕过净化进入 v-html
+  const forged = '<h2><a title="</h2><img src=x onerror=alert(1)>">使用说明</a></h2><p>正文</p>'
+  assert.deepEqual(splitLeadingHeading(forged), { heading: '', body: forged })
+  const withAttr = '<h2 title="x">使用说明</h2><p>a</p>'
+  assert.deepEqual(splitLeadingHeading(withAttr), { heading: '', body: withAttr })
 })
 
 test('instructions without a short leading heading stay unchanged', () => {

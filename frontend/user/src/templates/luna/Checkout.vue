@@ -55,9 +55,11 @@
 
         <!-- 交付信息（复用公共表单组件） -->
         <!-- 公共组件自带 border + p-6，这里覆盖成与其它区块一致的 luna 面板 -->
+        <!-- 提交后有未填写项：和下方联系方式一样整块描红；字段红框和提示图标见 luna.css 的 .luna-manual-form -->
         <CheckoutManualForm
           v-if="manualFormProducts.length"
-          class="luna-panel !rounded-[14px] !border-0 !p-4 sm:!p-5"
+          class="luna-manual-form luna-panel !rounded-[14px] !border-0 !p-4 transition-shadow sm:!p-5"
+          :class="{ 'ring-2 ring-destructive/60': showManualErrors }"
           :manual-form-products="manualFormProducts"
           v-model="manualFormData"
           :submit-attempted="submitAttempted"
@@ -338,6 +340,9 @@ const guestPasswordError = computed(() => {
   return password.length < GUEST_PASSWORD_MIN_LENGTH ? t('checkout.errors.guestPasswordTooShort') : ''
 })
 const showGuestErrors = computed(() => guestAttempted.value && guestInfoNeeded.value)
+const showManualErrors = computed(() => submitAttempted.value && manualFormProducts.value.some(
+  (product) => product.fields.some((field) => manualFieldError(product.itemKey, field.key) !== ''),
+))
 
 const shakeContact = async () => {
   contactShake.value = false

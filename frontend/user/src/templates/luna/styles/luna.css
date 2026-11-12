@@ -200,6 +200,36 @@ body.luna-tokens {
   font-weight: 700;
 }
 
+/* 结算页「交付信息填写」（公共组件 CheckoutManualForm）：提交后的未填写提示与游客邮箱保持一致——
+   输入框 / 选项组红框浅红底，提示文字前带警示图标。公共组件不改，只在 Luna 里按「字段下方出现报错」描红。
+   不放进 @layer：要压过组件自带的 border-input / bg-transparent 工具类。 */
+.luna-manual-form .space-y-1\.5:has(> p.text-destructive) > :is(input, textarea, select, div.border) {
+  border-color: var(--color-destructive);
+  /* 组件里字段放在灰底卡片上，按白色卡片底色混红，才和联系方式里的输入框同色 */
+  background-color: color-mix(in oklab, var(--color-destructive) 5%, var(--color-card));
+}
+
+.luna-manual-form .space-y-1\.5:has(> p.text-destructive) > :is(input, textarea, select):focus-visible {
+  --tw-ring-color: color-mix(in oklab, var(--color-destructive) 30%, transparent);
+}
+
+.luna-manual-form .space-y-1\.5 > p.text-destructive {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* lucide circle-alert，和游客邮箱提示里的图标同款 */
+.luna-manual-form .space-y-1\.5 > p.text-destructive::before {
+  content: '';
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 @layer components {
   /* 主体白色面板 */
   .luna-panel {

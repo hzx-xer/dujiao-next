@@ -8,6 +8,8 @@ import { resetListScrollSignal, resolveListScrollSignal } from '../utils/listScr
 export interface UseProductListOptions {
   pageSize?: number
   homeRouteName?: string
+  /** 翻页后滚动到的纵向位置，默认回到页面顶部 */
+  getScrollTop?: () => number
   categoryRouteName?: string
   /**
    * 没有「全部商品」入口的模板用：不在分类路由时默认选中第一个顶级分类，
@@ -22,6 +24,7 @@ export function useProductList(options: UseProductListOptions = {}) {
   const {
     pageSize: defaultPageSize = 20,
     homeRouteName = 'home',
+    getScrollTop = () => 0,
     categoryRouteName = 'category-products',
     defaultToFirstCategory = false,
     searchAllCategories = false,
@@ -41,7 +44,6 @@ export function useProductList(options: UseProductListOptions = {}) {
   const totalCount = ref(0)
   /** 当前列表结果对应的关键词（输入框在防抖期间可能已经变了） */
   const resultKeyword = ref('')
-  const showFilterDrawer = ref(false)
   const expandedParentIds = ref<number[]>([])
 
   const categoryGroups = computed(() => buildCategoryGroups(categories.value))
@@ -100,11 +102,8 @@ export function useProductList(options: UseProductListOptions = {}) {
     }
   }
 
-  const selectCategory = (categoryId: number | null, closeDrawer = false) => {
+  const selectCategory = (categoryId: number | null) => {
     selectedCategory.value = categoryId
-    if (closeDrawer) {
-      showFilterDrawer.value = false
-    }
   }
 
   /**
@@ -320,7 +319,7 @@ export function useProductList(options: UseProductListOptions = {}) {
       debouncedLoadProducts()
       // 关键词变化时已回到第 1 页并重置列表，不需要额外滚动
       if (!keywordChanged) {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        window.scrollTo({ top: getScrollTop(), behavior: 'smooth' })
       }
     },
   )
@@ -355,7 +354,6 @@ export function useProductList(options: UseProductListOptions = {}) {
     totalPages,
     totalCount,
     resultKeyword,
-    showFilterDrawer,
     expandedParentIds,
     categoryGroups,
     categoryMap,

@@ -1,7 +1,7 @@
 <template>
   <div :class="compact ? '' : 'bg-secondary border rounded-2xl p-4'">
     <template v-if="!compact">
-      <div class="text-xs uppercase tracking-wider text-muted-foreground">{{ t('payment.payableAmountLabel') }}</div>
+      <div class="text-xs [.vault-tokens_&]:uppercase [.vault-tokens_&]:tracking-wider text-muted-foreground">{{ t('payment.payableAmountLabel') }}</div>
       <div class="mt-1 text-2xl font-bold text-foreground">{{ payableAmountDisplay }}</div>
     </template>
     <div class="space-y-2 text-xs" :class="{ 'mt-4': !compact }">

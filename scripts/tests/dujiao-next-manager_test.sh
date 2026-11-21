@@ -245,6 +245,8 @@ final_site=$(render_final_nginx_site "shop.example.com" 8080 "dujiao-next-cert")
 assert_contains "final site proxies only to loopback" "$final_site" "proxy_pass http://127.0.0.1:8080;"
 assert_contains "final site redirects HTTP to HTTPS" "$final_site" 'return 301 https://$host$request_uri;'
 assert_not_contains "final site does not force HSTS" "$final_site" "Strict-Transport-Security"
+assert_contains "final site forwards only nginx's own client address" "$final_site" 'proxy_set_header X-Forwarded-For $remote_addr;'
+assert_not_contains "final site drops client-supplied X-Forwarded-For" "$final_site" 'proxy_add_x_forwarded_for'
 printf '<script type="module" src="./assets/app.js"></script>\n' > "${TEST_TMP}/admin.html"
 assert_equal "resolves admin static asset URL" "https://shop.example.com/dj-safe/assets/app.js" \
   "$(extract_first_asset_url "${TEST_TMP}/admin.html" "https://shop.example.com/dj-safe/")"

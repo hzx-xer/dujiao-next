@@ -1112,8 +1112,12 @@ server {
         proxy_pass http://127.0.0.1:${app_port};
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
+        # 只传 nginx 自己认定的来源地址，丢弃访客自带的 X-Forwarded-For。
+        # 前面套 Cloudflare 时，需在 http 层配置 set_real_ip_from <Cloudflare 网段> 和
+        # real_ip_header CF-Connecting-IP（可用 preview-site 的 deploy/cloudflare-ips.sh 生成），
+        # 否则 \$remote_addr 是 Cloudflare 节点 IP，登录限流会把同一节点后的所有用户一起封掉。
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_connect_timeout 10s;
         proxy_read_timeout 120s;

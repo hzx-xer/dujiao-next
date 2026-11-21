@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import DOMPurify from 'dompurify'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
@@ -16,6 +17,16 @@ const broadcastId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const broadcast = ref<AdminTelegramBroadcast | null>(null)
+
+// 群发正文是其他管理员写的 Telegram HTML，直接进 v-html；后台与 admin_token 同源，
+// 只保留 Telegram 支持的排版标签，脚本、事件属性、javascript: 链接一律去掉。
+const TELEGRAM_HTML_TAGS = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'span', 'tg-spoiler', 'a', 'code', 'pre', 'blockquote', 'br']
+const safeMessageHtml = computed(() =>
+  DOMPurify.sanitize(String(broadcast.value?.message_html || ''), {
+    ALLOWED_TAGS: TELEGRAM_HTML_TAGS,
+    ALLOWED_ATTR: ['href', 'class'],
+  }),
+)
 
 const formatRecipientType = (value: string) =>
   value === 'specific' ? t('telegramBot.broadcasts.recipientTypeSpecific') : t('telegramBot.broadcasts.recipientTypeAll')
@@ -146,7 +157,7 @@ onMounted(() => {
         </CardHeader>
         <CardContent>
           <div class="rounded-md border bg-muted/50 p-4">
-            <div class="prose prose-sm max-w-none dark:prose-invert break-words whitespace-pre-wrap" v-html="broadcast.message_html" />
+            <div class="prose prose-sm max-w-none dark:prose-invert break-words whitespace-pre-wrap" v-html="safeMessageHtml" />
           </div>
         </CardContent>
       </Card>

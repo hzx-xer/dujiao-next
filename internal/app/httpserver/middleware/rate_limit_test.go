@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dujiao-next/internal/constants"
+	settingsapp "github.com/dujiao-next/internal/modules/settings/application"
+	"github.com/dujiao-next/internal/shared/jsonmap"
+
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
@@ -196,5 +200,96 @@ func TestToInt64(t *testing.T) {
 				t.Fatalf("value want %d got %d", tc.want, got)
 			}
 		})
+	}
+}
+
+type callbackRoutesStoreStub struct {
+	value jsonmap.JSON
+}
+
+func (s *callbackRoutesStoreStub) GetByKey(key string) (jsonmap.JSON, bool, error) {
+	if key != constants.SettingKeyCallbackRoutesConfig || s.value == nil {
+		return nil, false, nil
+	}
+	return s.value, true, nil
+}
+
+func (s *callbackRoutesStoreStub) Upsert(_ string, value jsonmap.JSON) (jsonmap.JSON, error) {
+	return value, nil
+}
+
+// 自定义回调路径在全局中间件里直接分发，绕开了带限流的回调路由组；
+// CustomCallbackRateLimitMiddleware 必须给它们套上同样的限流，其他请求不受影响。
+func TestCustomCallbackRateLimitAppliesOnlyToCustomCallbackPaths(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service := settingsapp.NewService(&callbackRoutesStoreStub{value: jsonmap.JSON{
+		constants.SettingFieldPaymentCallback: "/api/v1/pay-notify-x7",
+		constants.SettingFieldStripeWebhook:   "/api/v1/stripe-hook-x7",
+	}})
+	service.InvalidateCallbackRoutesCache()
+	t.Cleanup(service.InvalidateCallbackRoutesCache)
+
+	rule := RateLimitRule{Prefix: "test:custom_callback", WindowSeconds: 60, MaxRequests: 2, BlockSeconds: 60}
+	r := gin.New()
+	r.Use(CustomCallbackRateLimitMiddleware(service, RateLimitMiddleware(nil, rule, KeyByIP)))
+	reached := 0
+	r.Use(func(c *gin.Context) {
+		reached++
+		c.Status(http.StatusOK)
+		c.Abort()
+	})
+
+	do := func(method, path string) int {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(method, path, nil)
+		req.RemoteAddr = "203.0.113.7:1234"
+		r.ServeHTTP(w, req)
+		return w.Code
+	}
+
+	for i := 0; i < 2; i++ {
+		if code := do(http.MethodPost, "/api/v1/pay-notify-x7"); code != http.StatusOK {
+			t.Fatalf("request %d within limit: status %d", i+1, code)
+		}
+	}
+	if code := do(http.MethodPost, "/api/v1/pay-notify-x7"); code != http.StatusTooManyRequests {
+		t.Fatalf("custom payment callback over limit: status %d, want 429", code)
+	}
+	// 同一来源 IP 的计数在所有自定义回调路径间共享，与默认回调路由组一致
+	if code := do(http.MethodPost, "/api/v1/stripe-hook-x7"); code != http.StatusTooManyRequests {
+		t.Fatalf("custom webhook over shared limit: status %d, want 429", code)
+	}
+	// 非回调路径、GET 访问只接受 POST 的 webhook 路径：不受这层限流影响
+	for _, tc := range []struct{ method, path string }{
+		{http.MethodPost, "/api/v1/public/config"},
+		{http.MethodGet, "/api/v1/stripe-hook-x7"},
+		{http.MethodGet, "/health"},
+	} {
+		if code := do(tc.method, tc.path); code != http.StatusOK {
+			t.Fatalf("%s %s should pass through: status %d", tc.method, tc.path, code)
+		}
+	}
+	if reached != 5 {
+		t.Fatalf("downstream handler reached %d times, want 5", reached)
+	}
+}
+
+func TestCustomCallbackRateLimitPassesThroughWithoutCustomRoutes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service := settingsapp.NewService(&callbackRoutesStoreStub{})
+	service.InvalidateCallbackRoutesCache()
+	t.Cleanup(service.InvalidateCallbackRoutesCache)
+
+	rule := RateLimitRule{Prefix: "test:custom_callback_none", WindowSeconds: 60, MaxRequests: 1, BlockSeconds: 60}
+	r := gin.New()
+	r.Use(CustomCallbackRateLimitMiddleware(service, RateLimitMiddleware(nil, rule, KeyByIP)))
+	r.POST("/api/v1/payments/callback", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+	for i := 0; i < 3; i++ {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/payments/callback", nil))
+		if w.Code != http.StatusOK {
+			t.Fatalf("request %d: status %d, want 200 (no custom routes configured)", i+1, w.Code)
+		}
 	}
 }

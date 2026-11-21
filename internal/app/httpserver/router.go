@@ -246,6 +246,7 @@ func SetupRouter(cfg *config.Config, c *container.Container) *gin.Engine {
 	r.Use(middleware.RecoveryMiddleware())
 	r.Use(middleware.LoggerMiddleware(log))
 	r.Use(middleware.CORSMiddleware(cfg.CORS))
+	r.Use(middleware.CustomCallbackRateLimitMiddleware(c.SettingService, middleware.RateLimitMiddleware(redisClient, callbackRule, middleware.KeyByIP)))
 	r.Use(middleware.CallbackRouteMiddleware(c.SettingService, paymentCallbackHandler, paymentWebhookHandler, upstreamHandler))
 
 	// 静态文件服务（上传的图片）必须放在前面。

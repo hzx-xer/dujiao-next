@@ -23,6 +23,43 @@ var defaultCallbackPaths = map[string]bool{
 	constants.DefaultUpstreamCallbackPath: true,
 }
 
+// CustomCallbackRateLimitMiddleware 给已配置的自定义回调路径套上回调限流。
+// 自定义路径由下面的 CallbackRouteMiddleware 在全局中间件里直接分发，不会进入
+// registerPaymentCallbackRoutes 那组带限流的路由，所以要在它前面单独限流；
+// 命中条件与 CallbackRouteMiddleware 的分发条件一致，其余请求原样放行。
+func CustomCallbackRateLimitMiddleware(settingService *settingsapp.Service, limiter gin.HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if settingService == nil || limiter == nil {
+			c.Next()
+			return
+		}
+		path := strings.TrimRight(c.Request.URL.Path, "/")
+		method := c.Request.Method
+		if !strings.HasPrefix(path, "/api/") || (method != http.MethodPost && method != http.MethodGet) {
+			c.Next()
+			return
+		}
+		routes := settingService.GetCallbackRoutesCached()
+		if routes == nil || path == "" {
+			c.Next()
+			return
+		}
+		matched := path == routes.PaymentCallback
+		if method == http.MethodPost {
+			switch path {
+			case routes.DujiaoPayWebhook, routes.PaypalWebhook, routes.StripeWebhook, routes.UpstreamCallback:
+				matched = true
+			}
+		}
+		if !matched {
+			c.Next()
+			return
+		}
+		// limiter 未超限时自己调用 c.Next() 继续后面的中间件（包括 CallbackRouteMiddleware）
+		limiter(c)
+	}
+}
+
 // CallbackRouteMiddleware 动态回调路由中间件。
 // 当管理员配置了自定义回调路由时：
 //   - 匹配自定义路径 → 分发到对应 handler

@@ -255,6 +255,9 @@ type SecurityConfig struct {
 	LoginRateLimit    LoginRateLimitConfig    `mapstructure:"login_rate_limit"`
 	AdminAPIRateLimit AdminAPIRateLimitConfig `mapstructure:"admin_api_rate_limit"`
 	PasswordPolicy    PasswordPolicyConfig    `mapstructure:"password_policy"`
+	// ChannelAPILegacyQuerySignature 为 true 时，渠道 API 带查询串的请求也接受只签 path 的旧格式签名。
+	// 仅用于过渡期兼容尚未升级的渠道客户端，开启后查询参数（如 channel_user_id）不受签名保护。
+	ChannelAPILegacyQuerySignature bool `mapstructure:"channel_api_legacy_query_signature"`
 }
 
 // AdminAPIRateLimitConfig limits machine requests by source IP and verified token.
@@ -398,6 +401,7 @@ func Load() *Config {
 	viper.SetDefault("security.password_policy.require_lower", true)
 	viper.SetDefault("security.password_policy.require_number", true)
 	viper.SetDefault("security.password_policy.require_special", false)
+	viper.SetDefault("security.channel_api_legacy_query_signature", false)
 	viper.SetDefault("email.enabled", false)
 	viper.SetDefault("email.host", "")
 	viper.SetDefault("email.port", 587)

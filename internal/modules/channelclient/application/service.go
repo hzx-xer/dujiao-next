@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dujiao-next/internal/crypto"
+	"github.com/dujiao-next/internal/logger"
 	channelclientcontract "github.com/dujiao-next/internal/modules/channelclient/contract"
 	channelclientdomain "github.com/dujiao-next/internal/modules/channelclient/domain"
 	"github.com/dujiao-next/internal/upstream"
@@ -333,7 +334,10 @@ func (s *Service) DecryptChannelSecret(client *channelclientdomain.Client) (stri
 
 // VerifyChannelSignature 验证渠道签名
 // 复用 upstream/signer.go 的 HMAC-SHA256 签名算法
-func (s *Service) VerifyChannelSignature(key, signature string, timestamp int64, method, path string, body []byte) (*channelclientdomain.Client, error) {
+//
+// 签名覆盖查询串（见 upstream.SignTarget）。allowLegacyQuery 为 true 时，带查询串的请求
+// 也接受只签 path 的旧格式，仅用于过渡期兼容尚未升级的渠道客户端；它会让查询参数失去保护。
+func (s *Service) VerifyChannelSignature(key, signature string, timestamp int64, method, path, rawQuery string, body []byte, allowLegacyQuery bool) (*channelclientdomain.Client, error) {
 	// 验证时间戳
 	if !upstream.IsTimestampValid(timestamp) {
 		return nil, ErrTimestampExpired
@@ -358,9 +362,13 @@ func (s *Service) VerifyChannelSignature(key, signature string, timestamp int64,
 	}
 
 	// 验证签名（复用 upstream.Verify）
-	if !upstream.Verify(plainSecret, method, path, signature, timestamp, body) {
+	if upstream.Verify(plainSecret, method, upstream.SignTarget(path, rawQuery), signature, timestamp, body) {
+		return client, nil
+	}
+	if rawQuery == "" || !allowLegacyQuery || !upstream.Verify(plainSecret, method, path, signature, timestamp, body) {
 		return nil, ErrSignatureInvalid
 	}
+	logger.Warnw("channel_signature_legacy_query_accepted", "channel_client_id", client.ID, "method", method, "path", path)
 
 	return client, nil
 }

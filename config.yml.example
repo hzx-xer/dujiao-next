@@ -149,6 +149,10 @@ security:
     require_lower: true
     require_number: true
     require_special: false
+  # 渠道 API（Telegram Bot 等）的签名覆盖查询串：METHOD\nPATH?QUERY\nTIMESTAMP\nmd5(body)，没有查询串时与旧格式相同。
+  # 旧版客户端只签 PATH，带查询参数的 GET 请求会被拒绝。仅在过渡期临时设为 true 兼容旧客户端，
+  # 开启后查询参数（如 channel_user_id）不受签名保护，截获的请求可被改参数重放。
+  channel_api_legacy_query_signature: false
 
 email:
   enabled: true

@@ -134,7 +134,9 @@ func TestServiceVerifiesSignatureAndMarksUsageThroughStore(t *testing.T) {
 		timestamp,
 		"POST",
 		"/api/v1/channel/orders",
+		"",
 		body,
+		false,
 	)
 	if err != nil {
 		t.Fatalf("verify channel signature failed: %v", err)
@@ -149,5 +151,40 @@ func TestServiceVerifiesSignatureAndMarksUsageThroughStore(t *testing.T) {
 	}
 	if store.items[client.ID].LastUsedAt == nil || !store.items[client.ID].LastUsedAt.Equal(usedAt) {
 		t.Fatalf("last-used timestamp was not persisted: %#v", store.items[client.ID].LastUsedAt)
+	}
+}
+
+func TestServiceChannelSignatureCoversQueryString(t *testing.T) {
+	store := &storeStub{}
+	service := NewService(store, "test-app-secret")
+	detail, err := service.CreateChannelClient("Channel", "telegram_bot", "", "", "")
+	if err != nil {
+		t.Fatalf("create channel client failed: %v", err)
+	}
+
+	const path = "/api/v1/channel/orders"
+	const query = "channel_user_id=1001&page=1"
+	timestamp := time.Now().Unix()
+	signed := upstream.Sign(detail.ChannelSecret, "GET", upstream.SignTarget(path, query), timestamp, nil)
+	legacy := upstream.Sign(detail.ChannelSecret, "GET", path, timestamp, nil)
+
+	if _, err := service.VerifyChannelSignature(detail.ChannelKey, signed, timestamp, "GET", path, query, nil, false); err != nil {
+		t.Fatalf("query-covering signature rejected: %v", err)
+	}
+	// 截获签名后改掉 channel_user_id 必须失败
+	if _, err := service.VerifyChannelSignature(detail.ChannelKey, signed, timestamp, "GET", path, "channel_user_id=2002&page=1", nil, false); err != ErrSignatureInvalid {
+		t.Fatalf("tampered query accepted, err=%v", err)
+	}
+	// 只签 path 的旧格式默认拒绝
+	if _, err := service.VerifyChannelSignature(detail.ChannelKey, legacy, timestamp, "GET", path, query, nil, false); err != ErrSignatureInvalid {
+		t.Fatalf("legacy signature accepted without opt-in, err=%v", err)
+	}
+	// 显式开启兼容后接受旧格式
+	if _, err := service.VerifyChannelSignature(detail.ChannelKey, legacy, timestamp, "GET", path, query, nil, true); err != nil {
+		t.Fatalf("legacy signature rejected with opt-in: %v", err)
+	}
+	// 没有查询串时新旧格式相同
+	if upstream.SignTarget(path, "") != path {
+		t.Fatalf("SignTarget without query must equal path")
 	}
 }

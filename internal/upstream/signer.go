@@ -33,6 +33,16 @@ func Sign(secret, method, path string, timestamp int64, body []byte) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
+// SignTarget 返回参与签名的请求目标：没有查询串时就是 path，与旧格式完全相同；
+// 有查询串时为 "path?rawQuery"（按请求里的原样，不重新排序或编码）。
+// 渠道 API 用它把查询参数纳入签名，避免截获的签名被改掉 channel_user_id 等参数后重放。
+func SignTarget(path, rawQuery string) string {
+	if rawQuery == "" {
+		return path
+	}
+	return path + "?" + rawQuery
+}
+
 // Verify 验证签名
 func Verify(secret, method, path, signature string, timestamp int64, body []byte) bool {
 	expected := Sign(secret, method, path, timestamp, body)

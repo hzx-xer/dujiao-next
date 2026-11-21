@@ -61,9 +61,10 @@ func ChannelAPIAuthMiddleware(container *container.Container) gin.HandlerFunc {
 
 		method := c.Request.Method
 		path := c.Request.URL.Path
+		allowLegacyQuery := container.Config != nil && container.Config.Security.ChannelAPILegacyQuerySignature
 
 		client, err := container.ChannelClientService.VerifyChannelSignature(
-			channelKey, signature, timestamp, method, path, body,
+			channelKey, signature, timestamp, method, path, c.Request.URL.RawQuery, body, allowLegacyQuery,
 		)
 		if err != nil {
 			switch err {

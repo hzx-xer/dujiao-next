@@ -2,6 +2,7 @@
   <div class="mx-auto w-full max-w-[1100px] px-3 pt-5 sm:px-6 sm:pt-8">
     <!-- 页面只有「选择分类 / 选择商品」两个二级标题，补一个仅供读屏与搜索引擎使用的一级标题 -->
     <h1 class="sr-only">{{ pageHeading }}</h1>
+    <LunaAnnouncementBar v-if="barAnnouncement" :announcement="barAnnouncement" />
     <section class="luna-panel px-4 py-5 sm:px-6 sm:py-6">
       <!-- 选择分类：没有「全部商品」，默认选中第一个分类 -->
       <template v-if="categoryGroups.length">
@@ -131,6 +132,7 @@ import { usePageSeo } from '../../composables/usePageSeo'
 import { useAnnouncement, type HomeAnnouncement } from '../../composables/useAnnouncement'
 import { useAppStore } from '../../stores/app'
 import LunaProductCard from './components/LunaProductCard.vue'
+import LunaAnnouncementBar from './components/LunaAnnouncementBar.vue'
 import PaginationNav from '../../components/PaginationNav.vue'
 import AnnouncementModal from '../../components/AnnouncementModal.vue'
 
@@ -228,13 +230,16 @@ const gridClass = computed(() => productLayout.value === 'list'
   ? 'grid-cols-1 gap-2.5'
   : 'grid-cols-2 items-start gap-2.5 sm:items-stretch sm:gap-3 lg:grid-cols-3')
 
-// ==================== 公告弹窗（版本化可关闭） ====================
+// ==================== 公告：普通类型常驻分类上方，其余类型弹窗（版本化可关闭） ====================
+const homeAnnouncement = computed(() => appStore.config?.announcement as HomeAnnouncement | undefined)
+const barAnnouncement = computed(() => homeAnnouncement.value?.type === 'normal' ? homeAnnouncement.value : undefined)
+
 const { shouldShow } = useAnnouncement()
 const activeAnnouncement = ref<HomeAnnouncement | null>(null)
 const announcementVisible = ref(false)
 const showAnnouncementIfNeeded = () => {
-  const announcement = appStore.config?.announcement as HomeAnnouncement | undefined
-  if (announcement && shouldShow(announcement)) {
+  const announcement = homeAnnouncement.value
+  if (announcement && announcement.type !== 'normal' && shouldShow(announcement)) {
     activeAnnouncement.value = announcement
     announcementVisible.value = true
   }

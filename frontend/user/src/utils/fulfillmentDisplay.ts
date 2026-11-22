@@ -79,3 +79,36 @@ export const splitLeadingHeading = (html: string): { heading: string; body: stri
   if (!heading || heading.length > MAX_HEADING_LENGTH) return { heading: '', body: html }
   return { heading, body: html.slice(match[0].length).trim() }
 }
+
+// 发货说明允许保留的内联样式：只覆盖后台富文本编辑器能设置的文字颜色 / 对齐等，
+// 不放开定位、尺寸、背景图等，避免上游同步来的说明用 CSS 伪造页面元素。
+const ALLOWED_INSTRUCTION_STYLE_PROPS = new Set([
+  'color',
+  'background-color',
+  'text-align',
+  'font-weight',
+  'font-style',
+  'text-decoration',
+  'text-decoration-line',
+])
+// 只接受颜色值、关键字、数字及 rgb()/hsl() 这类函数里会出现的字符
+const SAFE_STYLE_VALUE = /^[#\w\s.,%()-]+$/
+const UNSAFE_STYLE_VALUE = /url\s*\(|expression|var\s*\(|image|attr\s*\(/i
+
+/**
+ * 过滤发货说明 HTML 的 style 属性，只保留白名单内的属性和安全取值；全部被剔除时返回空串。
+ * 例：`color: #ff0000; position: fixed` → `color: #ff0000`
+ */
+export const filterInstructionStyle = (style: string): string => {
+  const kept: string[] = []
+  for (const decl of String(style || '').split(';')) {
+    const idx = decl.indexOf(':')
+    if (idx <= 0) continue
+    const prop = decl.slice(0, idx).trim().toLowerCase()
+    const value = decl.slice(idx + 1).trim()
+    if (!ALLOWED_INSTRUCTION_STYLE_PROPS.has(prop) || !value) continue
+    if (!SAFE_STYLE_VALUE.test(value) || UNSAFE_STYLE_VALUE.test(value)) continue
+    kept.push(`${prop}: ${value}`)
+  }
+  return kept.join('; ')
+}

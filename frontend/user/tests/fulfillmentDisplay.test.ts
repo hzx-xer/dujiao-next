@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   canListFulfillmentByLine,
   expectedAutoSecretCount,
+  filterInstructionStyle,
   splitFulfillmentLines,
   splitLeadingHeading,
 } from '../src/utils/fulfillmentDisplay.ts'
@@ -62,4 +63,21 @@ test('instructions without a short leading heading stay unchanged', () => {
   // h5/h6 和不配对的标签不算
   const h5 = '<h5>小标题</h5><p>a</p>'
   assert.deepEqual(splitLeadingHeading(h5), { heading: '', body: h5 })
+})
+
+test('instruction style keeps editor text color and alignment', () => {
+  assert.equal(filterInstructionStyle('color: #ff0000'), 'color: #ff0000')
+  assert.equal(filterInstructionStyle('color: rgb(239, 68, 68);'), 'color: rgb(239, 68, 68)')
+  assert.equal(filterInstructionStyle('text-align: center; COLOR: red'), 'text-align: center; color: red')
+})
+
+test('instruction style drops layout properties and unsafe values', () => {
+  assert.equal(filterInstructionStyle('position: fixed; inset: 0; z-index: 9999'), '')
+  assert.equal(filterInstructionStyle('color: red; position: fixed'), 'color: red')
+  assert.equal(filterInstructionStyle('background-color: url(https://evil.test/x.png)'), '')
+  assert.equal(filterInstructionStyle('color: expression(alert(1))'), '')
+  assert.equal(filterInstructionStyle('color: var(--x)'), '')
+  assert.equal(filterInstructionStyle('color: red !important'), '')
+  assert.equal(filterInstructionStyle('color: "red"'), '')
+  assert.equal(filterInstructionStyle(''), '')
 })

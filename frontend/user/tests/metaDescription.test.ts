@@ -29,8 +29,15 @@ test('long text is cut by character without splitting emoji', () => {
   assert.equal(Array.from(result)[8], '😀')
 })
 
+test('unclosed tags keep their text', () => {
+  assert.equal(toMetaDescription('a < b'), 'a < b')
+  assert.equal(toMetaDescription('<script>正文'), '正文')
+  assert.equal(toMetaDescription('<style>.a{}</style><script>正文'), '正文')
+  assert.equal(toMetaDescription('<SCRIPT >x</Script >正文'), '正文')
+})
+
 test('hostile long input stays fast and bounded', () => {
-  for (const input of ['<'.repeat(500000), '<script'.repeat(70000), '<a '.repeat(170000)]) {
+  for (const input of ['<'.repeat(500000), '<script'.repeat(70000), '<a '.repeat(170000), '<script>'.repeat(60000)]) {
     const start = performance.now()
     const result = toMetaDescription(input)
     assert.ok(performance.now() - start < 300, 'should not block the page')
